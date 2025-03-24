@@ -1,6 +1,9 @@
 import os
-from flask import Flask, render_template, send_from_directory, jsonify
+import uuid
+import datetime
+from flask import Flask, render_template, send_from_directory, jsonify, request
 import logging
+import numpy as np
 from core.database import init_db
 
 # Configure logging
@@ -135,6 +138,169 @@ def get_strategy(strategy_id):
         return jsonify(strategy_info[strategy_id])
     else:
         return jsonify({"error": "Strategy not found"}), 404
+
+# Backtest endpoints
+@app.route('/api/v1/backtest', methods=['POST'])
+def create_backtest():
+    """Submit a new backtesting job"""
+    try:
+        logger.debug("Received backtest request")
+        data = request.json
+        
+        if not data:
+            return jsonify({"error": "Invalid request data"}), 400
+            
+        # Generate a unique ID for the backtest
+        backtest_id = str(uuid.uuid4())
+        
+        # In a real implementation, we would validate the input data
+        # and submit the job to a background worker
+        
+        # For prototyping, we'll return demo results immediately
+        
+        # Simulated execution time (in seconds)
+        execution_time = 2.5
+        
+        # Generate sample equity curve
+        days = 365  # One year of daily data
+        equity_curve = generate_demo_equity_curve(
+            days, 
+            initial_capital=data.get('execution', {}).get('initial_capital', 100000)
+        )
+        
+        # Generate sample trades
+        trades = generate_demo_trades(
+            days, 
+            symbols=data.get('data', {}).get('symbols', ['AAPL', 'MSFT']),
+            start_date=data.get('data', {}).get('start_date', '2023-01-01')
+        )
+        
+        # Generate sample metrics
+        metrics = generate_demo_metrics()
+        
+        # Generate sample symbol metrics
+        symbol_metrics = {}
+        for symbol in data.get('data', {}).get('symbols', ['AAPL', 'MSFT']):
+            symbol_metrics[symbol] = {
+                "total_return": np.random.uniform(0.05, 0.3),
+                "win_rate": np.random.uniform(0.4, 0.7),
+                "avg_gain": np.random.uniform(0.01, 0.05),
+                "avg_loss": np.random.uniform(-0.03, -0.01),
+                "max_drawdown": np.random.uniform(-0.2, -0.05),
+                "volatility": np.random.uniform(0.1, 0.3)
+            }
+            
+        # Compile results
+        results = {
+            "overall_metrics": metrics,
+            "per_symbol_metrics": symbol_metrics,
+            "equity_curve": equity_curve,
+            "trades": trades
+        }
+            
+        return jsonify({
+            "backtest_id": backtest_id,
+            "status": "completed",  # For prototyping, we're marking it as completed immediately
+            "execution_time": execution_time,
+            "results": results
+        })
+        
+    except Exception as e:
+        logger.exception(f"Error processing backtest request: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/backtest/<backtest_id>', methods=['GET'])
+def get_backtest_results(backtest_id):
+    """Retrieve results for a specific backtest"""
+    # In a real implementation, we would query the database for results
+    # For prototyping, we'll return a not found error
+    return jsonify({
+        "error": "Backtest not found"
+    }), 404
+
+# Helper functions for generating demo data
+def generate_demo_equity_curve(days, initial_capital=100000):
+    """Generate a sample equity curve"""
+    # Start with initial capital
+    equity = initial_capital
+    curve = [equity]
+    
+    # Generate random daily returns with a slight upward bias
+    daily_returns = np.random.normal(0.0005, 0.01, days)
+    
+    # Calculate cumulative equity
+    for daily_return in daily_returns:
+        equity = equity * (1 + daily_return)
+        curve.append(equity)
+        
+    return curve
+
+def generate_demo_trades(days, symbols, start_date):
+    """Generate sample trades"""
+    trades = []
+    
+    # Parse start date
+    start = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    
+    # Generate 20-30 random trades
+    num_trades = np.random.randint(20, 30)
+    
+    for i in range(num_trades):
+        # Random symbol
+        symbol = np.random.choice(symbols)
+        
+        # Random entry date
+        entry_offset = np.random.randint(0, days - 10)
+        entry_date = (start + datetime.timedelta(days=entry_offset)).strftime('%Y-%m-%d')
+        
+        # Random exit date after entry
+        exit_offset = np.random.randint(1, 10)
+        exit_date = (start + datetime.timedelta(days=entry_offset + exit_offset)).strftime('%Y-%m-%d')
+        
+        # Random prices
+        entry_price = np.random.uniform(50, 200)
+        
+        # Slightly biased towards profitable trades
+        if np.random.random() > 0.4:  # 60% profitable trades
+            exit_price = entry_price * (1 + np.random.uniform(0.01, 0.1))
+        else:
+            exit_price = entry_price * (1 - np.random.uniform(0.01, 0.08))
+            
+        # Position size
+        position_size = np.random.randint(10, 100)
+        
+        # Calculate P&L
+        pnl = (exit_price - entry_price) * position_size
+        
+        trades.append({
+            "symbol": symbol,
+            "entry_date": entry_date,
+            "exit_date": exit_date,
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "position_size": position_size,
+            "pnl": pnl
+        })
+        
+    return trades
+
+def generate_demo_metrics():
+    """Generate sample backtest metrics"""
+    return {
+        "sharpe_ratio": np.random.uniform(1.0, 3.0),
+        "max_drawdown": np.random.uniform(-0.25, -0.05),
+        "total_return": np.random.uniform(0.1, 0.5),
+        "volatility": np.random.uniform(0.1, 0.3),
+        "win_rate": np.random.uniform(0.5, 0.7),
+        "profit_factor": np.random.uniform(1.2, 2.5),
+        "avg_trade": np.random.uniform(50, 200),
+        "num_trades": np.random.randint(20, 100),
+        "max_consecutive_wins": np.random.randint(3, 10),
+        "max_consecutive_losses": np.random.randint(2, 6),
+        "cagr": np.random.uniform(0.08, 0.25),
+        "calmar_ratio": np.random.uniform(0.5, 3.0),
+        "sortino_ratio": np.random.uniform(1.2, 4.0)
+    }
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,8 +1,10 @@
 import os
 import uuid
-from flask import Flask, render_template, send_from_directory, jsonify, request
+from flask import Flask, render_template, send_from_directory, jsonify, request, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import logging
-from core.database import init_db
+from core.database import init_db, User, WatchlistItem, BacktestRecord, SessionLocal
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -12,15 +14,101 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///backtest.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.environ.get("SESSION_SECRET", "dev-key-for-testing")
 
 # Initialize database
 with app.app_context():
     init_db()
 
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    with SessionLocal() as session:
+        return session.query(User).get(int(user_id))
+
 # Routes
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # Get user's backtests
+    with SessionLocal() as session:
+        backtests = session.query(BacktestRecord).filter_by(user_id=current_user.id).order_by(BacktestRecord.created_at.desc()).all()
+        watchlist = session.query(WatchlistItem).filter_by(user_id=current_user.id).all()
+    
+    return render_template('dashboard.html', backtests=backtests, watchlist=watchlist)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        with SessionLocal() as session:
+            user = session.query(User).filter_by(username=username).first()
+            
+            if user and user.check_password(password):
+                login_user(user)
+                return redirect(url_for('dashboard'))
+            else:
+                flash('Invalid username or password', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('register.html')
+        
+        with SessionLocal() as session:
+            # Check if username already exists
+            if session.query(User).filter_by(username=username).first():
+                flash('Username already exists', 'danger')
+                return render_template('register.html')
+                
+            # Check if email already exists
+            if session.query(User).filter_by(email=email).first():
+                flash('Email already exists', 'danger')
+                return render_template('register.html')
+            
+            # Create new user
+            user = User(username=username, email=email)
+            user.set_password(password)
+            
+            session.add(user)
+            session.commit()
+            
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('index'))
 
 @app.route('/templates/<path:path>')
 def send_template(path):
@@ -254,6 +342,87 @@ def upload_market_data():
     return jsonify({
         "error": "This endpoint is not yet implemented"
     }), 501
+
+@app.route('/api/v1/watchlist', methods=['GET'])
+@login_required
+def get_watchlist():
+    """Get user's stock watchlist"""
+    try:
+        with SessionLocal() as session:
+            watchlist_items = session.query(WatchlistItem).filter_by(user_id=current_user.id).all()
+            
+            result = [{
+                "symbol": item.symbol,
+                "added_at": item.added_at.isoformat()
+            } for item in watchlist_items]
+            
+            return jsonify(result)
+    except Exception as e:
+        logger.exception(f"Error retrieving watchlist: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/watchlist/add', methods=['POST'])
+@login_required
+def add_to_watchlist():
+    """Add a stock to the user's watchlist"""
+    try:
+        data = request.json
+        
+        if not data or 'symbol' not in data:
+            return jsonify({"error": "Symbol is required"}), 400
+        
+        symbol = data['symbol'].upper()
+        
+        with SessionLocal() as session:
+            # Check if symbol already exists in watchlist
+            existing = session.query(WatchlistItem).filter_by(user_id=current_user.id, symbol=symbol).first()
+            
+            if existing:
+                return jsonify({"error": "Symbol already in watchlist"}), 400
+            
+            # Add new watchlist item
+            watchlist_item = WatchlistItem(user_id=current_user.id, symbol=symbol)
+            session.add(watchlist_item)
+            session.commit()
+            
+            return jsonify({
+                "symbol": symbol,
+                "added_at": watchlist_item.added_at.isoformat(),
+                "message": f"Added {symbol} to watchlist"
+            })
+    except Exception as e:
+        logger.exception(f"Error adding to watchlist: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/watchlist/remove', methods=['POST'])
+@login_required
+def remove_from_watchlist():
+    """Remove a stock from the user's watchlist"""
+    try:
+        data = request.json
+        
+        if not data or 'symbol' not in data:
+            return jsonify({"error": "Symbol is required"}), 400
+        
+        symbol = data['symbol'].upper()
+        
+        with SessionLocal() as session:
+            # Find and remove the watchlist item
+            watchlist_item = session.query(WatchlistItem).filter_by(user_id=current_user.id, symbol=symbol).first()
+            
+            if not watchlist_item:
+                return jsonify({"error": "Symbol not found in watchlist"}), 404
+            
+            session.delete(watchlist_item)
+            session.commit()
+            
+            return jsonify({
+                "symbol": symbol,
+                "message": f"Removed {symbol} from watchlist"
+            })
+    except Exception as e:
+        logger.exception(f"Error removing from watchlist: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/metrics', methods=['GET'])
 def get_available_metrics():

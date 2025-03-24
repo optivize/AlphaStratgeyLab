@@ -1,0 +1,696 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Dashboard</h3>
+                <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBacktestModal">New Backtest</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Watchlist Section -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Watchlist</h4>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">Add Stock</button>
+            </div>
+            <div class="card-body">
+                {% if watchlist %}
+                <ul class="list-group" id="watchlist-container">
+                    {% for item in watchlist %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ item.symbol }}
+                        <button class="btn btn-sm btn-danger remove-stock" data-symbol="{{ item.symbol }}">Remove</button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center">No stocks in your watchlist</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Backtests Section -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="mb-0">Recent Backtests</h4>
+            </div>
+            <div class="card-body">
+                {% if backtests %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Strategy</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backtest in backtests %}
+                            <tr>
+                                <td>{{ backtest.id[:8] }}...</td>
+                                <td>{{ backtest.request.get('strategy', {}).get('name', 'Unknown') }}</td>
+                                <td>{{ backtest.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge {% if backtest.status == 'completed' %}bg-success{% elif backtest.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ backtest.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-info view-backtest" data-backtest-id="{{ backtest.id }}">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center">No backtests yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Backtest Modal -->
+<div class="modal fade" id="newBacktestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Backtest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="backtestForm">
+                    <div class="mb-3">
+                        <label for="strategy-select" class="form-label">Strategy</label>
+                        <select class="form-select" id="strategy-select" required>
+                            <option value="" selected disabled>Select a strategy</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="symbol-input" class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="symbol-input" placeholder="AAPL" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start-date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start-date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end-date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="initial-capital" class="form-label">Initial Capital</label>
+                        <input type="number" class="form-control" id="initial-capital" value="100000" required>
+                    </div>
+                    
+                    <div id="strategy-parameters"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submit-backtest">Run Backtest</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backtest Results Modal -->
+<div class="modal fade" id="backtestResultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Backtest Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="results-loading" class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing backtest...</p>
+                </div>
+                
+                <div id="results-content" style="display: none;">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Equity Curve</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="equity-chart" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Performance Metrics</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row" id="metrics-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Trades</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped" id="trades-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Symbol</th>
+                                                    <th>Entry Date</th>
+                                                    <th>Exit Date</th>
+                                                    <th>Entry Price</th>
+                                                    <th>Exit Price</th>
+                                                    <th>Position Size</th>
+                                                    <th>P&L</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Stock to Watchlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStockForm">
+                    <div class="mb-3">
+                        <label for="stock-symbol" class="form-label">Stock Symbol</label>
+                        <input type="text" class="form-control" id="stock-symbol" placeholder="AAPL" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-stock-btn">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize strategy selector
+    initializeStrategySelector();
+    
+    // Setup backtest form submission
+    setupFormSubmission();
+    
+    // Setup watchlist functionality
+    setupWatchlistFunctions();
+    
+    // Initialize results viewer for existing backtests
+    initializeResultsViewer();
+});
+
+function initializeStrategySelector() {
+    // Fetch available strategies
+    fetch('/api/v1/strategies')
+        .then(response => response.json())
+        .then(strategies => {
+            const strategySelect = document.getElementById('strategy-select');
+            strategies.forEach(strategy => {
+                const option = document.createElement('option');
+                option.value = strategy.id;
+                option.textContent = strategy.name;
+                strategySelect.appendChild(option);
+            });
+            
+            // Setup change handler to load strategy parameters
+            strategySelect.addEventListener('change', function() {
+                const selectedStrategy = this.value;
+                if (selectedStrategy) {
+                    fetch(`/api/v1/strategies/${selectedStrategy}`)
+                        .then(response => response.json())
+                        .then(strategy => {
+                            renderStrategyParameters(strategy, document.getElementById('strategy-parameters'));
+                        });
+                }
+            });
+        });
+}
+
+function renderStrategyParameters(strategy, container) {
+    container.innerHTML = '';
+    
+    if (strategy.parameters) {
+        const heading = document.createElement('h5');
+        heading.textContent = 'Strategy Parameters';
+        heading.className = 'mt-4 mb-3';
+        container.appendChild(heading);
+        
+        Object.entries(strategy.parameters).forEach(([name, info]) => {
+            const formGroup = document.createElement('div');
+            formGroup.className = 'mb-3';
+            
+            const label = document.createElement('label');
+            label.htmlFor = `param-${name}`;
+            label.className = 'form-label';
+            label.textContent = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            const input = document.createElement('input');
+            input.type = info.type === 'integer' || info.type === 'float' ? 'number' : 'text';
+            input.className = 'form-control';
+            input.id = `param-${name}`;
+            input.name = name;
+            input.value = info.default;
+            if (info.type === 'integer') {
+                input.step = 1;
+            } else if (info.type === 'float') {
+                input.step = 0.01;
+            }
+            
+            const small = document.createElement('small');
+            small.className = 'form-text text-muted';
+            small.textContent = info.description;
+            
+            formGroup.appendChild(label);
+            formGroup.appendChild(input);
+            formGroup.appendChild(small);
+            container.appendChild(formGroup);
+        });
+    }
+}
+
+function setupFormSubmission() {
+    document.getElementById('submit-backtest').addEventListener('click', function() {
+        const strategyId = document.getElementById('strategy-select').value;
+        const symbol = document.getElementById('symbol-input').value.toUpperCase();
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        const initialCapital = parseFloat(document.getElementById('initial-capital').value);
+        
+        if (!strategyId || !symbol || !startDate || !endDate || !initialCapital) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Collect strategy parameters
+        const params = {};
+        document.querySelectorAll('#strategy-parameters input').forEach(input => {
+            let value = input.value;
+            if (input.type === 'number') {
+                value = input.step === '1' ? parseInt(value) : parseFloat(value);
+            }
+            params[input.name] = value;
+        });
+        
+        // Prepare request payload
+        const payload = {
+            strategy: {
+                name: strategyId,
+                parameters: params
+            },
+            data: {
+                symbols: [symbol],
+                start_date: startDate,
+                end_date: endDate,
+                timeframe: "1d",
+                data_source: "default"
+            },
+            execution: {
+                initial_capital: initialCapital,
+                position_size: "equal",
+                commission: 0.001,
+                slippage: 0.0005
+            },
+            output: {
+                metrics: ["sharpe_ratio", "max_drawdown", "total_return", "win_rate"],
+                include_trades: true,
+                include_equity_curve: true
+            }
+        };
+        
+        // Submit backtest request
+        fetch('/api/v1/backtest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Close form modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('newBacktestModal'));
+            modal.hide();
+            
+            // Show results modal and poll for results
+            const resultsModal = new bootstrap.Modal(document.getElementById('backtestResultsModal'));
+            resultsModal.show();
+            
+            document.getElementById('results-loading').style.display = 'block';
+            document.getElementById('results-content').style.display = 'none';
+            
+            pollBacktestResults(data.backtest_id);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while submitting the backtest');
+        });
+    });
+}
+
+function pollBacktestResults(backtestId) {
+    const interval = setInterval(() => {
+        fetch(`/api/v1/backtest/${backtestId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    displayBacktestResults(data);
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    alert(`Backtest failed: ${data.error || 'Unknown error'}`);
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('backtestResultsModal'));
+                    modal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Error polling results:', error);
+                clearInterval(interval);
+                alert('An error occurred while retrieving backtest results');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('backtestResultsModal'));
+                modal.hide();
+            });
+    }, 1000);
+}
+
+function displayBacktestResults(data) {
+    document.getElementById('results-loading').style.display = 'none';
+    document.getElementById('results-content').style.display = 'block';
+    
+    // Initialize equity curve chart if data is available
+    if (data.results && data.results.equity_curve) {
+        initEquityCurveChart(data.results.equity_curve);
+    }
+    
+    // Display metrics
+    if (data.results && data.results.overall_metrics) {
+        const metricsContainer = document.getElementById('metrics-container');
+        metricsContainer.innerHTML = '';
+        
+        Object.entries(data.results.overall_metrics).forEach(([key, value]) => {
+            if (value !== null) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 mb-3';
+                
+                const card = document.createElement('div');
+                card.className = 'card h-100';
+                
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body text-center';
+                
+                const metricName = document.createElement('h5');
+                metricName.className = 'card-title';
+                metricName.textContent = formatMetricName(key);
+                
+                const metricValue = document.createElement('p');
+                metricValue.className = 'card-text display-6';
+                metricValue.textContent = formatMetricValue(key, value);
+                
+                cardBody.appendChild(metricName);
+                cardBody.appendChild(metricValue);
+                card.appendChild(cardBody);
+                col.appendChild(card);
+                metricsContainer.appendChild(col);
+            }
+        });
+    }
+    
+    // Display trades
+    if (data.results && data.results.trades) {
+        const tradesTable = document.getElementById('trades-table').getElementsByTagName('tbody')[0];
+        tradesTable.innerHTML = '';
+        
+        data.results.trades.forEach(trade => {
+            const row = tradesTable.insertRow();
+            
+            const symbolCell = row.insertCell();
+            symbolCell.textContent = trade.symbol;
+            
+            const entryDateCell = row.insertCell();
+            entryDateCell.textContent = formatDate(trade.entry_date);
+            
+            const exitDateCell = row.insertCell();
+            exitDateCell.textContent = trade.exit_date ? formatDate(trade.exit_date) : '-';
+            
+            const entryPriceCell = row.insertCell();
+            entryPriceCell.textContent = formatPrice(trade.entry_price);
+            
+            const exitPriceCell = row.insertCell();
+            exitPriceCell.textContent = trade.exit_price ? formatPrice(trade.exit_price) : '-';
+            
+            const positionSizeCell = row.insertCell();
+            positionSizeCell.textContent = trade.position_size.toFixed(2);
+            
+            const pnlCell = row.insertCell();
+            if (trade.pnl) {
+                pnlCell.textContent = formatPnL(trade.pnl);
+                pnlCell.className = trade.pnl >= 0 ? 'text-success' : 'text-danger';
+            } else {
+                pnlCell.textContent = '-';
+            }
+        });
+    }
+}
+
+function initEquityCurveChart(equityCurve) {
+    const ctx = document.getElementById('equity-chart').getContext('2d');
+    
+    // Generate labels (days)
+    const labels = Array.from({ length: equityCurve.length }, (_, i) => `Day ${i + 1}`);
+    
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Equity Curve',
+                data: equityCurve,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+function setupWatchlistFunctions() {
+    // Add stock to watchlist
+    document.getElementById('add-stock-btn').addEventListener('click', function() {
+        const symbol = document.getElementById('stock-symbol').value.toUpperCase();
+        
+        if (!symbol) {
+            alert('Please enter a stock symbol');
+            return;
+        }
+        
+        fetch('/api/v1/watchlist/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ symbol: symbol })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addStockModal'));
+                modal.hide();
+                
+                // Add to watchlist UI
+                const watchlistContainer = document.getElementById('watchlist-container');
+                
+                // Check if empty message exists and remove it
+                if (watchlistContainer.querySelector('p')) {
+                    watchlistContainer.innerHTML = '<ul class="list-group" id="watchlist-container"></ul>';
+                }
+                
+                // Create new item
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    ${data.symbol}
+                    <button class="btn btn-sm btn-danger remove-stock" data-symbol="${data.symbol}">Remove</button>
+                `;
+                watchlistContainer.appendChild(item);
+                
+                // Clear input
+                document.getElementById('stock-symbol').value = '';
+                
+                // Setup remove handler
+                setupRemoveHandlers();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while adding the stock to your watchlist');
+        });
+    });
+    
+    // Setup remove handlers
+    setupRemoveHandlers();
+}
+
+function setupRemoveHandlers() {
+    document.querySelectorAll('.remove-stock').forEach(button => {
+        button.addEventListener('click', function() {
+            const symbol = this.getAttribute('data-symbol');
+            
+            fetch('/api/v1/watchlist/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol: symbol })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Remove from UI
+                    this.closest('li').remove();
+                    
+                    // Check if watchlist is empty
+                    const watchlistContainer = document.getElementById('watchlist-container');
+                    if (watchlistContainer.children.length === 0) {
+                        watchlistContainer.innerHTML = '<p class="text-center">No stocks in your watchlist</p>';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while removing the stock from your watchlist');
+            });
+        });
+    });
+}
+
+function initializeResultsViewer() {
+    // Setup click handlers for viewing existing backtests
+    document.querySelectorAll('.view-backtest').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const backtestId = this.getAttribute('data-backtest-id');
+            
+            // Show results modal and loading indicator
+            const resultsModal = new bootstrap.Modal(document.getElementById('backtestResultsModal'));
+            resultsModal.show();
+            
+            document.getElementById('results-loading').style.display = 'block';
+            document.getElementById('results-content').style.display = 'none';
+            
+            // Fetch results
+            fetch(`/api/v1/backtest/${backtestId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'completed') {
+                        displayBacktestResults(data);
+                    } else if (data.status === 'failed') {
+                        alert(`Backtest failed: ${data.error || 'Unknown error'}`);
+                        resultsModal.hide();
+                    } else {
+                        pollBacktestResults(backtestId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while retrieving backtest results');
+                    resultsModal.hide();
+                });
+        });
+    });
+}
+
+// Helper formatting functions
+function formatMetricName(key) {
+    return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function formatMetricValue(key, value) {
+    if (key.includes('ratio') || key === 'volatility' || key === 'beta') {
+        return value.toFixed(2);
+    } else if (key.includes('return') || key.includes('drawdown') || key === 'win_rate') {
+        return (value * 100).toFixed(2) + '%';
+    } else {
+        return value.toString();
+    }
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+function formatPrice(price) {
+    return '$' + price.toFixed(2);
+}
+
+function formatPnL(pnl) {
+    const prefix = pnl >= 0 ? '+' : '';
+    return prefix + '$' + Math.abs(pnl).toFixed(2);
+}
+</script>
+{% endblock %}

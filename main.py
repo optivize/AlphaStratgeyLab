@@ -154,11 +154,23 @@ def create_backtest():
         # Generate a unique ID for the backtest
         backtest_id = str(uuid.uuid4())
         
-        # Here we would normally send the job to the GPU processing engine
-        # and store the job in a database for tracking
+        # Store the job in the database
+        from core.database import BacktestRecord
+        from sqlalchemy.orm import Session
+        from core.database import engine
         
-        # For now, just acknowledge receipt and return the job ID
-        # The client will poll for results later
+        with Session(engine) as session:
+            # Create new backtest record
+            backtest_record = BacktestRecord(
+                id=backtest_id,
+                request=data,
+                status="pending"
+            )
+            session.add(backtest_record)
+            session.commit()
+        
+        # In a real implementation, we would now send the job to the 
+        # GPU processing engine via API call or message queue
         
         return jsonify({
             "backtest_id": backtest_id,
@@ -174,32 +186,62 @@ def create_backtest():
 def get_backtest_results(backtest_id):
     """Retrieve results for a specific backtest"""
     try:
-        # For development purposes to enable frontend testing,
-        # we'll return a mock "completed" response with empty data
-        
-        # In a real implementation, we would check the status of the job
-        # from the database/queue and return appropriate status messages
-        
         logger.debug(f"Querying backtest results for ID: {backtest_id}")
         
-        # Simulate a completed job with empty results structure
-        mock_results = {
-            "backtest_id": backtest_id,
-            "status": "completed",
-            "execution_time": 0.5,  # simulated time in seconds
-            "results": {
-                "overall_metrics": {
-                    "sharpe_ratio": None,
-                    "max_drawdown": None,
-                    "total_return": None
-                },
-                "per_symbol_metrics": {},
-                "equity_curve": [],
-                "trades": []
-            }
-        }
+        # Check the status of the job from the database
+        from core.database import BacktestRecord
+        from sqlalchemy.orm import Session
+        from core.database import engine
         
-        return jsonify(mock_results)
+        with Session(engine) as session:
+            # Query for the backtest record
+            backtest_record = session.query(BacktestRecord).get(backtest_id)
+            
+            if not backtest_record:
+                return jsonify({"error": "Backtest not found"}), 404
+            
+            # Return the current status of the backtest
+            response = {
+                "backtest_id": backtest_record.id,
+                "status": backtest_record.status,
+                "execution_time": backtest_record.execution_time or 0,
+            }
+            
+            # Include results if available
+            if backtest_record.results:
+                response["results"] = backtest_record.results
+            
+            # Include error message if job failed
+            if backtest_record.status == "failed" and backtest_record.error:
+                response["error"] = backtest_record.error
+            
+            # For demonstration purposes, transition pending jobs to completed
+            # In a real implementation, this would be done by the processing engine
+            if backtest_record.status == "pending":
+                # Update the status to simulate a completed job
+                backtest_record.status = "completed"
+                backtest_record.execution_time = 0.5
+                
+                # Create empty result structure
+                backtest_record.results = {
+                    "overall_metrics": {
+                        "sharpe_ratio": None,
+                        "max_drawdown": None,
+                        "total_return": None
+                    },
+                    "per_symbol_metrics": {},
+                    "equity_curve": [],
+                    "trades": []
+                }
+                
+                session.commit()
+                
+                # Update the response
+                response["status"] = "completed"
+                response["execution_time"] = backtest_record.execution_time
+                response["results"] = backtest_record.results
+            
+            return jsonify(response)
         
     except Exception as e:
         logger.exception(f"Error retrieving backtest results: {str(e)}")

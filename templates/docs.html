@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - GPU-Powered Stock Backtesting Engine</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span class="gpu-accent">GPU</span>-Powered Stock Backtesting
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/templates/docs.html">Documentation</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="py-4 bg-primary text-white">
+        <div class="container">
+            <h1 class="display-5 fw-bold">API Documentation</h1>
+            <p class="lead">A comprehensive guide to using the GPU-Powered Stock Backtesting Engine API</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container py-5">
+        <div class="row g-5">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="position-sticky" style="top: 2rem;">
+                    <div class="list-group">
+                        <a href="#introduction" class="list-group-item list-group-item-action">Introduction</a>
+                        <a href="#api-basics" class="list-group-item list-group-item-action">API Basics</a>
+                        <a href="#endpoints" class="list-group-item list-group-item-action">Endpoints</a>
+                        <a href="#strategies" class="list-group-item list-group-item-action">Strategy Templates</a>
+                        <a href="#backtest-example" class="list-group-item list-group-item-action">Backtest Example</a>
+                        <a href="#metrics" class="list-group-item list-group-item-action">Performance Metrics</a>
+                        <a href="#error-handling" class="list-group-item list-group-item-action">Error Handling</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documentation Content -->
+            <div class="col-lg-9">
+                <!-- Introduction -->
+                <section id="introduction" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">Introduction</h2>
+                    <p>
+                        The GPU-Powered Stock Backtesting Engine API provides a high-performance service for backtesting stock trading strategies at scale. By leveraging GPU acceleration through CUDA, this API enables traders, analysts, and researchers to validate their investment hypotheses against historical market data much faster than traditional CPU-based solutions.
+                    </p>
+                    <p>
+                        This documentation provides comprehensive information about the API endpoints, strategy templates, data formats, and performance metrics available through the service.
+                    </p>
+                </section>
+
+                <!-- API Basics -->
+                <section id="api-basics" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">API Basics</h2>
+                    <h3>Base URL</h3>
+                    <p>All API requests should be made to the base URL:</p>
+                    <div class="doc-code">
+                        <code>http://localhost:8000/api/v1</code>
+                    </div>
+
+                    <h3>Authentication</h3>
+                    <p>
+                        Authentication is not required for local development. In a production environment, API keys would be required for authentication.
+                    </p>
+
+                    <h3>Content Types</h3>
+                    <p>
+                        The API accepts and returns JSON data. All requests should include the appropriate header:
+                    </p>
+                    <div class="doc-code">
+                        <code>Content-Type: application/json</code>
+                    </div>
+                </section>
+
+                <!-- Endpoints -->
+                <section id="endpoints" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">API Endpoints</h2>
+
+                    <h3>Backtest Operations</h3>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-success me-2">POST</span>
+                            <span class="flex-grow-1">/api/v1/backtest</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>Submit a new backtesting job</h5>
+                            <p>
+                                This endpoint initiates a new backtest with the specified strategy, data parameters, and execution settings.
+                            </p>
+                            <h6>Request Body:</h6>
+                            <div class="doc-code">
+<pre>{
+  "strategy": {
+    "name": "MovingAverageCrossover",
+    "parameters": {
+      "short_window": 20,
+      "long_window": 50,
+      "signal_threshold": 0.01
+    },
+    "custom_code": null
+  },
+  "data": {
+    "symbols": ["AAPL", "MSFT", "GOOG"],
+    "start_date": "2020-01-01",
+    "end_date": "2023-12-31",
+    "timeframe": "1d",
+    "data_source": "default"
+  },
+  "execution": {
+    "initial_capital": 100000,
+    "position_size": "equal",
+    "commission": 0.001,
+    "slippage": 0.0005
+  },
+  "output": {
+    "metrics": ["sharpe_ratio", "max_drawdown", "total_return"],
+    "include_trades": true,
+    "include_equity_curve": true
+  }
+}</pre>
+                            </div>
+
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>{
+  "backtest_id": "bt-12345",
+  "status": "pending",
+  "execution_time": 0,
+  "results": null
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/backtest/{backtest_id}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>Retrieve backtest results</h5>
+                            <p>
+                                This endpoint retrieves the results of a previously submitted backtest job.
+                            </p>
+                            <h6>Path Parameters:</h6>
+                            <ul>
+                                <li><strong>backtest_id</strong>: The ID of the backtest</li>
+                            </ul>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>{
+  "backtest_id": "bt-12345",
+  "status": "completed",
+  "execution_time": 42.3,
+  "results": {
+    "overall_metrics": {
+      "sharpe_ratio": 1.85,
+      "max_drawdown": 0.15,
+      "total_return": 0.65
+    },
+    "per_symbol_metrics": {
+      "AAPL": { "total_return": 0.72, "win_rate": 0.58 },
+      "MSFT": { "total_return": 0.68, "win_rate": 0.55 },
+      "GOOG": { "total_return": 0.55, "win_rate": 0.52 }
+    },
+    "equity_curve": [100000, 102300, ...],
+    "trades": [
+      {
+        "symbol": "AAPL",
+        "entry_date": "2022-03-15",
+        "exit_date": "2022-04-02",
+        "entry_price": 162.45,
+        "exit_price": 174.32,
+        "position_size": 100,
+        "pnl": 1187.0
+      }
+    ]
+  }
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Strategy Operations</h3>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/strategies</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>List available strategy templates</h5>
+                            <p>
+                                This endpoint retrieves a list of all available strategy templates that can be used for backtesting.
+                            </p>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>[
+  {
+    "id": "MovingAverageCrossover",
+    "name": "MovingAverageCrossover",
+    "description": "Trading based on short and long-term moving average signals",
+    "parameters": {
+      "short_window": {
+        "type": "integer",
+        "default": 20,
+        "description": "Short moving average window"
+      },
+      "long_window": {
+        "type": "integer",
+        "default": 50,
+        "description": "Long moving average window"
+      },
+      "signal_threshold": {
+        "type": "float",
+        "default": 0.01,
+        "description": "Signal threshold to trigger trades"
+      }
+    }
+  },
+  {
+    "id": "BollingerBands",
+    "name": "BollingerBands",
+    "description": "Trading based on price movements relative to volatility bands",
+    "parameters": {
+      "window": {
+        "type": "integer",
+        "default": 20,
+        "description": "Window size for calculating moving average"
+      },
+      "num_std": {
+        "type": "float",
+        "default": 2.0,
+        "description": "Number of standard deviations for bands"
+      }
+    }
+  }
+]</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/strategies/{strategy_id}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>Get details for a specific strategy template</h5>
+                            <p>
+                                This endpoint retrieves detailed information about a specific strategy template.
+                            </p>
+                            <h6>Path Parameters:</h6>
+                            <ul>
+                                <li><strong>strategy_id</strong>: The ID of the strategy template</li>
+                            </ul>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>{
+  "id": "MovingAverageCrossover",
+  "name": "MovingAverageCrossover",
+  "description": "Trading based on short and long-term moving average signals",
+  "parameters": {
+    "short_window": {
+      "type": "integer",
+      "default": 20,
+      "description": "Short moving average window"
+    },
+    "long_window": {
+      "type": "integer",
+      "default": 50,
+      "description": "Long moving average window"
+    },
+    "signal_threshold": {
+      "type": "float",
+      "default": 0.01,
+      "description": "Signal threshold to trigger trades"
+    }
+  }
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Data Operations</h3>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-success me-2">POST</span>
+                            <span class="flex-grow-1">/api/v1/data/upload</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>Upload custom market data</h5>
+                            <p>
+                                This endpoint allows uploading custom market data in CSV or Parquet format for use in backtests.
+                            </p>
+                            <h6>Form Data:</h6>
+                            <ul>
+                                <li><strong>file</strong>: The CSV or Parquet file containing market data</li>
+                                <li><strong>source_name</strong> (optional): Name for the uploaded data source</li>
+                            </ul>
+                            <p>Required columns in the file: date, symbol, open, high, low, close, volume</p>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>{
+  "source_name": "custom_data",
+  "symbols": ["AAPL", "MSFT", "GOOG"],
+  "rows": 3650,
+  "message": "Successfully uploaded 3650 rows of data for 3 symbols"
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/data/sources</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>List available data sources</h5>
+                            <p>
+                                This endpoint retrieves a list of all available data sources that can be used for backtesting.
+                            </p>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>[
+  {
+    "name": "default",
+    "description": "Default stock market data",
+    "symbols_count": 10,
+    "start_date": "2010-01-01",
+    "end_date": "2023-12-31",
+    "timeframes": ["1d", "1h"]
+  },
+  {
+    "name": "custom_data",
+    "description": "Custom data uploaded by user",
+    "symbols_count": 3,
+    "start_date": "2020-01-01",
+    "end_date": "2023-12-31",
+    "timeframes": ["1d"]
+  }
+]</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/data/symbols</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>List available symbols</h5>
+                            <p>
+                                This endpoint retrieves a list of all available symbols, optionally filtered by data source.
+                            </p>
+                            <h6>Query Parameters:</h6>
+                            <ul>
+                                <li><strong>source</strong> (optional): Filter symbols by data source</li>
+                            </ul>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>["AAPL", "MSFT", "GOOG", "AMZN", "META", "TSLA", "NVDA", "BRK.A", "JPM", "JNJ"]</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Metrics Operations</h3>
+
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary me-2">GET</span>
+                            <span class="flex-grow-1">/api/v1/metrics</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>Get available performance metrics</h5>
+                            <p>
+                                This endpoint retrieves a list of all available performance metrics that can be calculated in backtests.
+                            </p>
+                            <h6>Response:</h6>
+                            <div class="doc-code">
+<pre>{
+  "total_return": {
+    "name": "Total Return",
+    "description": "Total percentage return of the strategy"
+  },
+  "sharpe_ratio": {
+    "name": "Sharpe Ratio",
+    "description": "Risk-adjusted return (using risk-free rate of 0)"
+  },
+  "max_drawdown": {
+    "name": "Maximum Drawdown",
+    "description": "Maximum peak-to-trough decline in portfolio value"
+  },
+  "volatility": {
+    "name": "Volatility",
+    "description": "Standard deviation of returns (annualized)"
+  }
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Strategy Templates -->
+                <section id="strategies" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">Strategy Templates</h2>
+                    <p>
+                        The API provides several built-in strategy templates that can be used for backtesting. Each strategy has specific parameters that can be customized to fit your trading approach.
+                    </p>
+
+                    <div class="accordion" id="strategyAccordion">
+                        <!-- Moving Average Crossover -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingMA">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMA" aria-expanded="true" aria-controls="collapseMA">
+                                    Moving Average Crossover
+                                </button>
+                            </h2>
+                            <div id="collapseMA" class="accordion-collapse collapse show" aria-labelledby="headingMA" data-bs-parent="#strategyAccordion">
+                                <div class="accordion-body">
+                                    <p>Generates buy signals when the short-term moving average crosses above the long-term moving average, and sell signals when it crosses below.</p>
+                                    <h6>Parameters:</h6>
+                                    <ul>
+                                        <li><strong>short_window</strong>: Period for the short-term moving average (default: 20)</li>
+                                        <li><strong>long_window</strong>: Period for the long-term moving average (default: 50)</li>
+                                        <li><strong>signal_threshold</strong>: Minimum difference between moving averages to generate a signal (default: 0.01)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bollinger Bands -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingBB">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBB" aria-expanded="false" aria-controls="collapseBB">
+                                    Bollinger Bands
+                                </button>
+                            </h2>
+                            <div id="collapseBB" class="accordion-collapse collapse" aria-labelledby="headingBB" data-bs-parent="#strategyAccordion">
+                                <div class="accordion-body">
+                                    <p>Generates buy signals when price crosses below the lower band (oversold), and sell signals when price crosses above the upper band (overbought).</p>
+                                    <h6>Parameters:</h6>
+                                    <ul>
+                                        <li><strong>window</strong>: Look-back period for calculating the moving average and standard deviation (default: 20)</li>
+                                        <li><strong>num_std</strong>: Number of standard deviations for the bands (default: 2.0)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Momentum -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingMomentum">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMomentum" aria-expanded="false" aria-controls="collapseMomentum">
+                                    Momentum Strategy
+                                </button>
+                            </h2>
+                            <div id="collapseMomentum" class="accordion-collapse collapse" aria-labelledby="headingMomentum" data-bs-parent="#strategyAccordion">
+                                <div class="accordion-body">
+                                    <p>Generates buy signals when momentum (price change over a period) is positive and above threshold, and sell signals when it's negative and below threshold.</p>
+                                    <h6>Parameters:</h6>
+                                    <ul>
+                                        <li><strong>momentum_window</strong>: Look-back period for calculating momentum (default: 14)</li>
+                                        <li><strong>threshold</strong>: Minimum momentum value to generate a signal (default: 0.05)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mean Reversion -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingMR">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMR" aria-expanded="false" aria-controls="collapseMR">
+                                    Mean Reversion
+                                </button>
+                            </h2>
+                            <div id="collapseMR" class="accordion-collapse collapse" aria-labelledby="headingMR" data-bs-parent="#strategyAccordion">
+                                <div class="accordion-body">
+                                    <p>Generates buy signals when price is significantly below its historical mean, and sell signals when price is significantly above its historical mean.</p>
+                                    <h6>Parameters:</h6>
+                                    <ul>
+                                        <li><strong>window</strong>: Look-back period for calculating the mean (default: 30)</li>
+                                        <li><strong>z_threshold</strong>: Z-score threshold to trigger trades (default: 1.5)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Backtest Example -->
+                <section id="backtest-example" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">Backtest Example</h2>
+                    <p>
+                        Here's a complete example of how to submit a backtest and retrieve the results using curl commands:
+                    </p>
+
+                    <h5>Step 1: Submit a backtest</h5>
+                    <div class="doc-code">
+<pre>curl -X POST "http://localhost:8000/api/v1/backtest" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategy": {
+      "name": "MovingAverageCrossover",
+      "parameters": {
+        "short_window": 20,
+        "long_window": 50,
+        "signal_threshold": 0.01
+      }
+    },
+    "data": {
+      "symbols": ["AAPL", "MSFT", "GOOG"],
+      "start_date": "2020-01-01",
+      "end_date": "2023-12-31",
+      "timeframe": "1d",
+      "data_source": "default"
+    },
+    "execution": {
+      "initial_capital": 100000,
+      "position_size": "equal",
+      "commission": 0.001,
+      "slippage": 0.0005
+    },
+    "output": {
+      "metrics": ["sharpe_ratio", "max_drawdown", "total_return"],
+      "include_trades": true,
+      "include_equity_curve": true
+    }
+  }'</pre>
+                    </div>
+
+                    <h5>Step 2: Retrieve the results</h5>
+                    <div class="doc-code">
+<pre>curl -X GET "http://localhost:8000/api/v1/backtest/bt-12345"</pre>
+                    </div>
+
+                    <h5>Python Example</h5>
+                    <div class="doc-code">
+<pre>import requests
+import json
+
+# Submit a backtest
+backtest_request = {
+    "strategy": {
+        "name": "MovingAverageCrossover",
+        "parameters": {
+            "short_window": 20,
+            "long_window": 50,
+            "signal_threshold": 0.01
+        }
+    },
+    "data": {
+        "symbols": ["AAPL", "MSFT", "GOOG"],
+        "start_date": "2020-01-01",
+        "end_date": "2023-12-31",
+        "timeframe": "1d",
+        "data_source": "default"
+    },
+    "execution": {
+        "initial_capital": 100000,
+        "position_size": "equal",
+        "commission": 0.001,
+        "slippage": 0.0005
+    },
+    "output": {
+        "metrics": ["sharpe_ratio", "max_drawdown", "total_return"],
+        "include_trades": True,
+        "include_equity_curve": True
+    }
+}
+
+response = requests.post(
+    "http://localhost:8000/api/v1/backtest",
+    headers={"Content-Type": "application/json"},
+    data=json.dumps(backtest_request)
+)
+
+# Get the backtest ID
+backtest_id = response.json()["backtest_id"]
+
+# Retrieve the results
+results = requests.get(f"http://localhost:8000/api/v1/backtest/{backtest_id}")
+print(json.dumps(results.json(), indent=2))</pre>
+                    </div>
+                </section>
+
+                <!-- Performance Metrics -->
+                <section id="metrics" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">Performance Metrics</h2>
+                    <p>
+                        The API calculates a comprehensive set of performance metrics to evaluate trading strategies:
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Return</td>
+                                    <td>Overall percentage return of the strategy</td>
+                                </tr>
+                                <tr>
+                                    <td>Sharpe Ratio</td>
+                                    <td>Risk-adjusted return measure (annualized return divided by annualized volatility)</td>
+                                </tr>
+                                <tr>
+                                    <td>Maximum Drawdown</td>
+                                    <td>Largest peak-to-trough decline in portfolio value</td>
+                                </tr>
+                                <tr>
+                                    <td>Volatility</td>
+                                    <td>Standard deviation of returns (typically annualized)</td>
+                                </tr>
+                                <tr>
+                                    <td>Win Rate</td>
+                                    <td>Percentage of trades that were profitable</td>
+                                </tr>
+                                <tr>
+                                    <td>Profit Factor</td>
+                                    <td>Gross profit divided by gross loss</td>
+                                </tr>
+                                <tr>
+                                    <td>Average Trade</td>
+                                    <td>Average profit/loss per trade</td>
+                                </tr>
+                                <tr>
+                                    <td>CAGR</td>
+                                    <td>Compound Annual Growth Rate</td>
+                                </tr>
+                                <tr>
+                                    <td>Calmar Ratio</td>
+                                    <td>CAGR divided by maximum drawdown</td>
+                                </tr>
+                                <tr>
+                                    <td>Sortino Ratio</td>
+                                    <td>Similar to Sharpe ratio but only uses downside deviation</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Error Handling -->
+                <section id="error-handling" class="doc-section">
+                    <h2 class="border-bottom pb-2 mb-4">Error Handling</h2>
+                    <p>
+                        The API uses standard HTTP status codes to indicate the success or failure of requests:
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Status Code</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>200 OK</td>
+                                    <td>The request was successful</td>
+                                </tr>
+                                <tr>
+                                    <td>400 Bad Request</td>
+                                    <td>The request was invalid or could not be processed</td>
+                                </tr>
+                                <tr>
+                                    <td>404 Not Found</td>
+                                    <td>The requested resource was not found</td>
+                                </tr>
+                                <tr>
+                                    <td>500 Internal Server Error</td>
+                                    <td>An error occurred while processing the request</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5>Error Response Format</h5>
+                    <div class="doc-code">
+<pre>{
+  "detail": "Error message describing what went wrong"
+}</pre>
+                    </div>
+
+                    <p>
+                        For backtest operations, the status field in the response will indicate if a backtest has failed:
+                    </p>
+                    <div class="doc-code">
+<pre>{
+  "backtest_id": "bt-12345",
+  "status": "failed",
+  "execution_time": 0,
+  "error": "Error message describing what went wrong",
+  "results": null
+}</pre>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2025 GPU-Powered Stock Backtesting Engine</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="/" class="text-light me-3">Home</a>
+                    <a href="/templates/docs.html" class="text-light me-3">Documentation</a>
+                    <a href="#" class="text-light">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Feather icons
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

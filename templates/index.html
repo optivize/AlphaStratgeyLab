@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU-Powered Stock Backtesting Engine</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span class="gpu-accent">GPU</span>-Powered Stock Backtesting
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/templates/docs.html">Documentation</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="py-5 bg-primary text-white">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold">Accelerate Your Trading Strategy Validation</h1>
+                    <p class="lead">Leverage GPU computing power to backtest stock trading strategies 20x faster than traditional CPU-based solutions.</p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <svg width="200" height="200" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#ffffff" d="M40,8H8c-2.2,0-4,1.8-4,4v24c0,2.2,1.8,4,4,4h32c2.2,0,4-1.8,4-4V12C44,9.8,42.2,8,40,8z M12,18h4v4h-4V18z M20,26h-8v-2h8V26z M30,26h-8v-2h8V26z M30,22h-8v-2h8V22z M30,18h-8v-2h8V18z M36,30h-4v-4h4V30z"/>
+                        <path fill="#76b900" d="M36,22h-4v-4h4V22z M20,30h-8v-2h8V30z M30,30h-8v-2h8V30z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container main-container">
+        <!-- Features -->
+        <section class="py-4">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i data-feather="zap"></i>
+                            </div>
+                            <h3 class="card-title">GPU Acceleration</h3>
+                            <p class="card-text">Harness the parallel processing power of GPUs to run complex strategies across thousands of securities in seconds.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i data-feather="trending-up"></i>
+                            </div>
+                            <h3 class="card-title">Multiple Strategies</h3>
+                            <p class="card-text">Test popular strategies like Moving Average Crossover, Bollinger Bands, Momentum, and Mean Reversion.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i data-feather="bar-chart-2"></i>
+                            </div>
+                            <h3 class="card-title">Comprehensive Metrics</h3>
+                            <p class="card-text">Evaluate performance with metrics like Sharpe Ratio, Max Drawdown, Win Rate, and many more.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Backtest Form -->
+        <section class="py-4">
+            <div class="card">
+                <div class="card-header bg-secondary">
+                    <h2 class="mb-0">Run a Backtest</h2>
+                </div>
+                <div class="card-body">
+                    <form id="backtest-form">
+                        <!-- Strategy Selection -->
+                        <div class="mb-4">
+                            <h4>1. Select Strategy</h4>
+                            <div class="mb-3">
+                                <label for="strategy-selector" class="form-label">Strategy</label>
+                                <select id="strategy-selector" name="strategy" class="form-select" required>
+                                    <option value="" selected disabled>Select a strategy</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Strategy Parameters (dynamically populated) -->
+                            <div id="strategy-parameters"></div>
+                        </div>
+                        
+                        <!-- Data Selection -->
+                        <div class="mb-4">
+                            <h4>2. Select Data</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="symbols" class="form-label">Symbols (comma separated)</label>
+                                        <input type="text" class="form-control" id="symbols" name="symbols" placeholder="AAPL, MSFT, GOOG" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="data-source" class="form-label">Data Source</label>
+                                        <select class="form-select" id="data-source" name="data-source">
+                                            <option value="default" selected>Default</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="start-date" class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="start-date" name="start-date" value="2020-01-01" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="end-date" class="form-label">End Date</label>
+                                        <input type="date" class="form-control" id="end-date" name="end-date" value="2023-12-31" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="timeframe" class="form-label">Timeframe</label>
+                                        <select class="form-select" id="timeframe" name="timeframe">
+                                            <option value="1d" selected>Daily</option>
+                                            <option value="1h">Hourly</option>
+                                            <option value="1m">Minute</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Execution Settings -->
+                        <div class="mb-4">
+                            <h4>3. Execution Settings</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="initial-capital" class="form-label">Initial Capital</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="initial-capital" name="initial-capital" value="100000" step="1000" min="1000" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="position-size" class="form-label">Position Sizing</label>
+                                        <select class="form-select" id="position-size" name="position-size">
+                                            <option value="equal" selected>Equal Weight</option>
+                                            <option value="percent">Percent of Capital</option>
+                                            <option value="fixed">Fixed Dollar Amount</option>
+                                            <option value="volatility">Volatility Adjusted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="commission" class="form-label">Commission (% per trade)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="commission" name="commission" value="0.001" step="0.0001" min="0">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="slippage" class="form-label">Slippage (% per trade)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="slippage" name="slippage" value="0.0005" step="0.0001" min="0">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Output Settings -->
+                        <div class="mb-4">
+                            <h4>4. Output Settings</h4>
+                            <div class="mb-3">
+                                <label class="form-label">Performance Metrics</label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="total_return" id="metric-total-return" name="metrics" checked>
+                                            <label class="form-check-label" for="metric-total-return">
+                                                Total Return
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="sharpe_ratio" id="metric-sharpe" name="metrics" checked>
+                                            <label class="form-check-label" for="metric-sharpe">
+                                                Sharpe Ratio
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="max_drawdown" id="metric-drawdown" name="metrics" checked>
+                                            <label class="form-check-label" for="metric-drawdown">
+                                                Maximum Drawdown
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="volatility" id="metric-volatility" name="metrics">
+                                            <label class="form-check-label" for="metric-volatility">
+                                                Volatility
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="win_rate" id="metric-win-rate" name="metrics" checked>
+                                            <label class="form-check-label" for="metric-win-rate">
+                                                Win Rate
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="profit_factor" id="metric-profit-factor" name="metrics">
+                                            <label class="form-check-label" for="metric-profit-factor">
+                                                Profit Factor
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="cagr" id="metric-cagr" name="metrics">
+                                            <label class="form-check-label" for="metric-cagr">
+                                                CAGR
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="calmar_ratio" id="metric-calmar" name="metrics">
+                                            <label class="form-check-label" for="metric-calmar">
+                                                Calmar Ratio
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="sortino_ratio" id="metric-sortino" name="metrics">
+                                            <label class="form-check-label" for="metric-sortino">
+                                                Sortino Ratio
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="include-trades" name="include-trades" checked>
+                                        <label class="form-check-label" for="include-trades">Include Trade List</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="include-equity-curve" name="include-equity-curve" checked>
+                                        <label class="form-check-label" for="include-equity-curve">Include Equity Curve</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Run Backtest</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Status Container -->
+        <div id="status-container" class="mt-4"></div>
+        
+        <!-- Results Container -->
+        <div id="results-container" class="mt-4"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2025 GPU-Powered Stock Backtesting Engine</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="/templates/docs.html" class="text-light me-3">Documentation</a>
+                    <a href="#" class="text-light me-3">API Reference</a>
+                    <a href="#" class="text-light">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        // Initialize Feather icons
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

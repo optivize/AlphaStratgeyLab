@@ -172,13 +172,27 @@ function setupFormSubmission() {
             submitButton.disabled = false;
             submitButton.textContent = originalButtonText;
             
-            // If backtest is completed, show results
-            if (data.status === 'completed') {
-                displayBacktestResults(data);
-            } else {
-                // Otherwise, poll for results
-                pollBacktestResults(data.backtest_id);
+            if (data.error) {
+                alert('Error from server: ' + data.error);
+                return;
             }
+            
+            // Display a message that the job is pending
+            const statusContainer = document.getElementById('status-container');
+            if (statusContainer) {
+                statusContainer.style.display = 'block';
+                statusContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                            <div>${data.message || 'Processing backtest...'} (ID: ${data.backtest_id})</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Start polling for results
+            pollBacktestResults(data.backtest_id);
         })
         .catch(error => {
             console.error('Error submitting backtest:', error);

@@ -546,3 +546,194 @@ function formatPnL(pnl) {
         return `-$${Math.abs(pnl).toFixed(2)}`;
     }
 }
+
+// Setup AI Backtest Form functionality
+function setupAIBacktestForm() {
+    const aiBacktestForm = document.getElementById('ai-backtest-form');
+    const aiResponseContainer = document.getElementById('ai-response-container');
+    const aiResponseContent = document.getElementById('ai-response-content');
+    const applyConfigBtn = document.getElementById('apply-config-btn');
+    const backtestRequestTextarea = document.getElementById('backtest-request');
+    
+    if (!aiBacktestForm) return;
+    
+    // Set up suggestion buttons
+    document.querySelectorAll('.suggestion-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const suggestionText = this.textContent.trim();
+            backtestRequestTextarea.value = suggestionText;
+            backtestRequestTextarea.focus();
+        });
+    });
+    
+    aiBacktestForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const userRequest = backtestRequestTextarea.value.trim();
+        
+        if (!userRequest) {
+            alert('Please describe your backtest requirements');
+            return;
+        }
+        
+        // Show loading indicator
+        const submitButton = document.getElementById('generate-backtest-btn');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+        
+        // Send the request to our backend API
+        fetch('/api/v1/ai/backtest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ query: userRequest })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Generate a UI-friendly response from the API data
+            const response = formatAIBacktestResponse(data);
+            
+            // Display the response
+            aiResponseContent.innerHTML = response.html;
+            aiResponseContainer.style.display = 'block';
+            
+            // Store the configuration data for the "Apply" button
+            applyConfigBtn.setAttribute('data-config', JSON.stringify(response.config));
+            
+            // Reset the submit button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while processing your request');
+            
+            // Reset the submit button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    });
+    
+    // Handle "Apply Configuration" button click
+    if (applyConfigBtn) {
+        applyConfigBtn.addEventListener('click', function() {
+            const configData = JSON.parse(this.getAttribute('data-config'));
+            
+            // Open the backtest modal
+            const backtestModal = new bootstrap.Modal(document.getElementById('newBacktestModal'));
+            backtestModal.show();
+            
+            // Set the form values based on the AI-generated configuration
+            document.getElementById('strategy-select').value = configData.strategy;
+            // Trigger change event to load strategy parameters
+            document.getElementById('strategy-select').dispatchEvent(new Event('change'));
+            
+            document.getElementById('symbol-input').value = configData.symbol;
+            document.getElementById('start-date').value = configData.startDate;
+            document.getElementById('end-date').value = configData.endDate;
+            document.getElementById('initial-capital').value = configData.initialCapital;
+            
+            // Strategy parameters will be set after they're loaded
+            const checkInterval = setInterval(() => {
+                const paramsContainer = document.getElementById('strategy-parameters');
+                
+                if (paramsContainer.children.length > 0) {
+                    clearInterval(checkInterval);
+                    
+                    // Set strategy parameter values
+                    Object.entries(configData.parameters).forEach(([key, value]) => {
+                        const input = document.querySelector(`#param-${key}`);
+                        if (input) {
+                            input.value = value;
+                        }
+                    });
+                }
+            }, 100);
+        });
+    }
+}
+
+// Format the API response to display in the UI
+function formatAIBacktestResponse(data) {
+    // Extract strategy information
+    const strategyId = data.strategy.id;
+    const strategyName = data.strategy.name;
+    const strategyParams = data.strategy.parameters;
+    
+    // Extract data information
+    const symbols = data.data.symbols;
+    const startDate = data.data.start_date;
+    const endDate = data.data.end_date;
+    
+    // Extract execution information
+    const initialCapital = data.execution.initial_capital;
+    
+    // Create a configuration object for the "Apply" button
+    const config = {
+        strategy: strategyId,
+        symbol: symbols[0],
+        startDate: startDate,
+        endDate: endDate,
+        initialCapital: initialCapital,
+        parameters: strategyParams
+    };
+    
+    // Generate HTML for the response
+    const html = `
+        <div class="mb-3">
+            <h6>I've analyzed your request and created the following backtest configuration:</h6>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Strategy</span>
+                    <span class="badge bg-primary">${strategyName}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Symbol</span>
+                    <span class="badge bg-secondary">${symbols.join(', ')}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Time Period</span>
+                    <span class="badge bg-info">${formatDate(startDate)} to ${formatDate(endDate)}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Initial Capital</span>
+                    <span class="badge bg-success">$${initialCapital.toLocaleString()}</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div>
+            <h6>Strategy Parameters:</h6>
+            <ul class="list-group">
+                ${Object.entries(strategyParams).map(([key, value]) => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>${formatParameterName(key)}</span>
+                        <span class="badge bg-dark">${value}</span>
+                    </li>
+                `).join('')}
+            </ul>
+            <p class="text-muted mt-2">Click "Apply Configuration" to use these settings in the backtest form.</p>
+        </div>
+    `;
+    
+    return { html, config };
+}
+
+// Helper function to format strategy names
+function formatStrategyName(strategyId) {
+    const names = {
+        'moving_average_crossover': 'Moving Average Crossover',
+        'bollinger_bands': 'Bollinger Bands',
+        'momentum': 'Momentum',
+        'mean_reversion': 'Mean Reversion'
+    };
+    
+    return names[strategyId] || strategyId;
+}
+
+// Helper function to format parameter names
+function formatParameterName(name) {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}

@@ -460,6 +460,10 @@ def ai_backtest():
             response["data"]["symbols"] = ["GOOGL"]
         elif "amazon" in query.lower() or "amzn" in query.lower():
             response["data"]["symbols"] = ["AMZN"]
+        elif "aapl" in query.lower() or "apple" in query.lower():
+            response["data"]["symbols"] = ["AAPL"]
+        elif "tech stocks" in query.lower():
+            response["data"]["symbols"] = ["AAPL", "MSFT", "GOOGL", "AMZN", "META"]
         
         if "bollinger" in query.lower():
             response["strategy"]["id"] = "BollingerBands"
@@ -475,6 +479,17 @@ def ai_backtest():
                 "momentum_window": 14,
                 "threshold": 0.05
             }
+        elif "mean reversion" in query.lower():
+            response["strategy"]["id"] = "MeanReversion"
+            response["strategy"]["name"] = "Mean Reversion"
+            response["strategy"]["parameters"] = {
+                "window": 30,
+                "z_threshold": 1.5
+            }
+            
+        # Process capital amount
+        if "$50k" in query.lower() or "50k" in query.lower() or "50,000" in query.lower():
+            response["execution"]["initial_capital"] = 50000
         
         return jsonify(response)
     

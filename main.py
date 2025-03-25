@@ -425,9 +425,99 @@ def ai_backtest():
         query = data['query']
         logger.debug(f"Received AI backtest query: {query}")
         
-        # In a real implementation, this would call an NLP service to analyze the query
-        # and generate appropriate backtest parameters
-        # For now, we'll return a simple mock response
+        # Get Together AI API key from environment
+        together_key = os.environ.get("TOGETHER_KEY")
+        logger.debug(f"Together AI API key available: {bool(together_key)}")
+        
+        # Process with Together AI API if key is available
+        if together_key and len(query.strip()) > 10:  # Only process substantial queries
+            try:
+                import requests
+                import json
+                
+                # API endpoint for Together AI
+                api_url = "https://api.together.xyz/v1/completions"
+                
+                # Prepare prompt for the AI
+                prompt = f"""
+                You are an expert trading strategy assistant. Extract information from the following query to 
+                create a structured trading strategy backtest configuration.
+                
+                User query: {query}
+                
+                Output a JSON object with the following structure:
+                {{
+                    "strategy": {{
+                        "id": "MovingAverageCrossover|BollingerBands|MomentumStrategy|MeanReversion",
+                        "name": "Strategy name",
+                        "parameters": {{
+                            // Strategy-specific parameters
+                        }}
+                    }},
+                    "data": {{
+                        "symbols": ["AAPL"], // Stock symbols
+                        "start_date": "2023-01-01", // In YYYY-MM-DD format
+                        "end_date": "2023-12-31", // In YYYY-MM-DD format
+                        "timeframe": "1d"
+                    }},
+                    "execution": {{
+                        "initial_capital": 100000,
+                        "position_size": "equal",
+                        "commission": 0.001,
+                        "slippage": 0.0005
+                    }}
+                }}
+                """
+                
+                # Prepare the request payload
+                payload = {
+                    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                    "prompt": prompt,
+                    "max_tokens": 1024,
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "top_k": 40,
+                    "repetition_penalty": 1.1
+                }
+                
+                # Set headers with API key
+                headers = {
+                    "Authorization": f"Bearer {together_key}",
+                    "Content-Type": "application/json"
+                }
+                
+                # Make the API request
+                logger.debug("Making request to Together AI API")
+                ai_response = requests.post(api_url, json=payload, headers=headers)
+                
+                # Process the response
+                if ai_response.status_code == 200:
+                    try:
+                        result = ai_response.json()
+                        content = result.get('output', {}).get('choices', [{}])[0].get('text', '').strip()
+                        
+                        # Extract JSON from the response
+                        json_start = content.find('{')
+                        json_end = content.rfind('}') + 1
+                        
+                        if json_start >= 0 and json_end > json_start:
+                            json_str = content[json_start:json_end]
+                            ai_config = json.loads(json_str)
+                            
+                            # Validate and use AI-generated config
+                            if (ai_config and 'strategy' in ai_config and 
+                                'data' in ai_config and 'execution' in ai_config):
+                                return jsonify(ai_config)
+                        
+                        logger.debug(f"AI response processed, but couldn't extract valid JSON")
+                    except Exception as e:
+                        logger.exception(f"Error processing AI response: {str(e)}")
+                else:
+                    logger.error(f"Error from Together AI API: {ai_response.status_code} - {ai_response.text}")
+            except Exception as e:
+                logger.exception(f"Error calling Together AI API: {str(e)}")
+                
+        # Fallback to keyword-based approach if AI processing fails
         
         response = {
             "strategy": {

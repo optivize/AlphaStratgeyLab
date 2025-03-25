@@ -98,6 +98,23 @@
                         <label for="backtest-request" class="form-label">Your Backtest Requirements</label>
                         <textarea class="form-control" id="backtest-request" rows="4" placeholder="For example: 'I want to test a moving average crossover strategy for AAPL stock from 2020 to 2023 with an initial investment of $10,000'"></textarea>
                     </div>
+                    
+                    <!-- Quick Suggestions -->
+                    <div class="d-flex flex-wrap mb-3 gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary suggestion-btn rounded-pill">
+                            <i data-feather="trending-up" class="me-1" style="width: 16px; height: 16px;"></i> Moving average crossover for AAPL
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary suggestion-btn rounded-pill">
+                            <i data-feather="bar-chart-2" class="me-1" style="width: 16px; height: 16px;"></i> Bollinger bands for TSLA
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary suggestion-btn rounded-pill">
+                            <i data-feather="activity" class="me-1" style="width: 16px; height: 16px;"></i> Momentum strategy for tech stocks
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary suggestion-btn rounded-pill">
+                            <i data-feather="refresh-cw" class="me-1" style="width: 16px; height: 16px;"></i> Mean reversion with $50K capital
+                        </button>
+                    </div>
+                    
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <button type="submit" class="btn btn-primary" id="generate-backtest-btn">
                             <i data-feather="cpu" class="me-1"></i> Generate Backtest
@@ -684,13 +701,23 @@ function setupAIBacktestForm() {
     const aiResponseContainer = document.getElementById('ai-response-container');
     const aiResponseContent = document.getElementById('ai-response-content');
     const applyConfigBtn = document.getElementById('apply-config-btn');
+    const backtrackRequestTextarea = document.getElementById('backtest-request');
     
     if (!aiBacktestForm) return;
+    
+    // Set up suggestion buttons
+    document.querySelectorAll('.suggestion-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const suggestionText = this.textContent.trim();
+            backtrackRequestTextarea.value = suggestionText;
+            backtrackRequestTextarea.focus();
+        });
+    });
     
     aiBacktestForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const userRequest = document.getElementById('backtest-request').value.trim();
+        const userRequest = backtrackRequestTextarea.value.trim();
         
         if (!userRequest) {
             alert('Please describe your backtest requirements');

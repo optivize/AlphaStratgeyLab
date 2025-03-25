@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeStrategySelector();
     setupFormSubmission();
     initializeResultsViewer();
+    setupAIBacktestForm();
+    
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
 });
 
 // Initialize strategy selection dropdown

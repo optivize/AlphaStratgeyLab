@@ -83,6 +83,44 @@
     </div>
 </div>
 
+<!-- AI Backtest Assistant Section -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">AI Backtest Assistant</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Describe your backtest requirements in plain language, and our AI assistant will help you configure the optimal backtest parameters.</p>
+                
+                <form id="ai-backtest-form">
+                    <div class="mb-3">
+                        <label for="backtest-request" class="form-label">Your Backtest Requirements</label>
+                        <textarea class="form-control" id="backtest-request" rows="4" placeholder="For example: 'I want to test a moving average crossover strategy for AAPL stock from 2020 to 2023 with an initial investment of $10,000'"></textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary" id="generate-backtest-btn">
+                            <i data-feather="cpu" class="me-1"></i> Generate Backtest
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="ai-response-container" class="mt-4" style="display: none;">
+                    <div class="card bg-light">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">AI Generated Backtest Configuration</h5>
+                            <button class="btn btn-sm btn-success" id="apply-config-btn">Apply Configuration</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="ai-response-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- New Backtest Modal -->
 <div class="modal fade" id="newBacktestModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -247,6 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize results viewer for existing backtests
     initializeResultsViewer();
+    
+    // Setup AI backtest form submission
+    setupAIBacktestForm();
+    
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
 });
 
 function initializeStrategySelector() {
@@ -624,6 +670,184 @@ function setupRemoveHandlers() {
             });
         });
     });
+}
+
+function setupAIBacktestForm() {
+    const aiBacktestForm = document.getElementById('ai-backtest-form');
+    const aiResponseContainer = document.getElementById('ai-response-container');
+    const aiResponseContent = document.getElementById('ai-response-content');
+    const applyConfigBtn = document.getElementById('apply-config-btn');
+    
+    if (!aiBacktestForm) return;
+    
+    aiBacktestForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const userRequest = document.getElementById('backtest-request').value.trim();
+        
+        if (!userRequest) {
+            alert('Please describe your backtest requirements');
+            return;
+        }
+        
+        // Show loading indicator
+        const submitButton = document.getElementById('generate-backtest-btn');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+        
+        // Send the request to our backend API
+        fetch('/api/v1/ai/backtest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ query: userRequest })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Generate a UI-friendly response from the API data
+            const response = formatAIBacktestResponse(data);
+            
+            // Display the response
+            aiResponseContent.innerHTML = response.html;
+            aiResponseContainer.style.display = 'block';
+            
+            // Store the configuration data for the "Apply" button
+            applyConfigBtn.setAttribute('data-config', JSON.stringify(response.config));
+            
+            // Reset the submit button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while processing your request');
+            
+            // Reset the submit button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    });
+    
+    // Handle "Apply Configuration" button click
+    applyConfigBtn.addEventListener('click', function() {
+        const configData = JSON.parse(this.getAttribute('data-config'));
+        
+        // Open the backtest modal
+        const backtestModal = new bootstrap.Modal(document.getElementById('newBacktestModal'));
+        backtestModal.show();
+        
+        // Set the form values based on the AI-generated configuration
+        document.getElementById('strategy-select').value = configData.strategy;
+        // Trigger change event to load strategy parameters
+        document.getElementById('strategy-select').dispatchEvent(new Event('change'));
+        
+        document.getElementById('symbol-input').value = configData.symbol;
+        document.getElementById('start-date').value = configData.startDate;
+        document.getElementById('end-date').value = configData.endDate;
+        document.getElementById('initial-capital').value = configData.initialCapital;
+        
+        // Strategy parameters will be set after they're loaded
+        const checkInterval = setInterval(() => {
+            const paramsContainer = document.getElementById('strategy-parameters');
+            
+            if (paramsContainer.children.length > 0) {
+                clearInterval(checkInterval);
+                
+                // Set strategy parameter values
+                Object.entries(configData.parameters).forEach(([key, value]) => {
+                    const input = document.querySelector(`#param-${key}`);
+                    if (input) {
+                        input.value = value;
+                    }
+                });
+            }
+        }, 100);
+    });
+}
+
+// Format the API response to display in the UI
+function formatAIBacktestResponse(data) {
+    // Extract strategy information
+    const strategyId = data.strategy.id;
+    const strategyName = data.strategy.name;
+    const strategyParams = data.strategy.parameters;
+    
+    // Extract data information
+    const symbols = data.data.symbols;
+    const startDate = data.data.start_date;
+    const endDate = data.data.end_date;
+    
+    // Extract execution information
+    const initialCapital = data.execution.initial_capital;
+    
+    // Create a configuration object for the "Apply" button
+    const config = {
+        strategy: strategyId,
+        symbol: symbols[0],
+        startDate: startDate,
+        endDate: endDate,
+        initialCapital: initialCapital,
+        parameters: strategyParams
+    };
+    
+    // Generate HTML for the response
+    const html = `
+        <div class="mb-3">
+            <h6>I've analyzed your request and created the following backtest configuration:</h6>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Strategy</span>
+                    <span class="badge bg-primary">${strategyName}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Symbol</span>
+                    <span class="badge bg-secondary">${symbols.join(', ')}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Time Period</span>
+                    <span class="badge bg-info">${formatDate(startDate)} to ${formatDate(endDate)}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Initial Capital</span>
+                    <span class="badge bg-success">$${initialCapital.toLocaleString()}</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div>
+            <h6>Strategy Parameters:</h6>
+            <ul class="list-group">
+                ${Object.entries(strategyParams).map(([key, value]) => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>${formatParameterName(key)}</span>
+                        <span class="badge bg-dark">${value}</span>
+                    </li>
+                `).join('')}
+            </ul>
+            <p class="text-muted mt-2">Click "Apply Configuration" to use these settings in the backtest form.</p>
+        </div>
+    `;
+    
+    return { html, config };
+}
+
+// Helper function to format strategy names
+function formatStrategyName(strategyId) {
+    const names = {
+        'moving_average_crossover': 'Moving Average Crossover',
+        'bollinger_bands': 'Bollinger Bands',
+        'momentum': 'Momentum',
+        'mean_reversion': 'Mean Reversion'
+    };
+    
+    return names[strategyId] || strategyId;
+}
+
+// Helper function to format parameter names
+function formatParameterName(name) {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
 function initializeResultsViewer() {

@@ -412,6 +412,76 @@ def add_to_watchlist():
         logger.exception(f"Error adding to watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/v1/ai/backtest', methods=['POST'])
+@login_required
+def ai_backtest():
+    """Process an AI-generated backtest request"""
+    try:
+        data = request.json
+        
+        if not data or 'query' not in data:
+            return jsonify({"error": "Query is required"}), 400
+        
+        query = data['query']
+        logger.debug(f"Received AI backtest query: {query}")
+        
+        # In a real implementation, this would call an NLP service to analyze the query
+        # and generate appropriate backtest parameters
+        # For now, we'll return a simple mock response
+        
+        response = {
+            "strategy": {
+                "id": "MovingAverageCrossover",
+                "name": "Moving Average Crossover",
+                "parameters": {
+                    "short_window": 20,
+                    "long_window": 50,
+                    "signal_threshold": 0.01
+                }
+            },
+            "data": {
+                "symbols": ["AAPL"],
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+                "timeframe": "1d"
+            },
+            "execution": {
+                "initial_capital": 100000,
+                "position_size": "equal",
+                "commission": 0.001,
+                "slippage": 0.0005
+            }
+        }
+        
+        # Process any specific keywords in the query
+        if "tesla" in query.lower() or "tsla" in query.lower():
+            response["data"]["symbols"] = ["TSLA"]
+        elif "google" in query.lower() or "goog" in query.lower():
+            response["data"]["symbols"] = ["GOOGL"]
+        elif "amazon" in query.lower() or "amzn" in query.lower():
+            response["data"]["symbols"] = ["AMZN"]
+        
+        if "bollinger" in query.lower():
+            response["strategy"]["id"] = "BollingerBands"
+            response["strategy"]["name"] = "Bollinger Bands"
+            response["strategy"]["parameters"] = {
+                "window": 20,
+                "num_std": 2.0
+            }
+        elif "momentum" in query.lower():
+            response["strategy"]["id"] = "MomentumStrategy"
+            response["strategy"]["name"] = "Momentum"
+            response["strategy"]["parameters"] = {
+                "momentum_window": 14,
+                "threshold": 0.05
+            }
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        logger.exception(f"Error processing AI backtest request: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/v1/watchlist/remove', methods=['POST'])
 @login_required
 def remove_from_watchlist():

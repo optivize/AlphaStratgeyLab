@@ -301,6 +301,13 @@ function initializeStrategySelector() {
         .then(response => response.json())
         .then(strategies => {
             const strategySelect = document.getElementById('strategy-select');
+            
+            // Clear existing options except the default placeholder
+            while (strategySelect.options.length > 1) {
+                strategySelect.remove(1);
+            }
+            
+            // Add strategy options
             strategies.forEach(strategy => {
                 const option = document.createElement('option');
                 option.value = strategy.id;

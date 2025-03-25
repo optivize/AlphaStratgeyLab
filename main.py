@@ -45,8 +45,6 @@ def dashboard():
     
     # Render the new dashboard template with the AI Backtest Assistant
     return render_template('dashboard2.html', backtests=backtests, watchlist=watchlist)
-    
-    return render_template('dashboard.html', backtests=backtests, watchlist=watchlist)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

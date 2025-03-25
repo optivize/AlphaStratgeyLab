@@ -61,218 +61,19 @@
             </div>
         </section>
 
-        <!-- Backtest Form -->
+        <!-- Call to Action Section -->
         <section class="py-4">
             <div class="card">
-                <div class="card-header bg-secondary">
-                    <h2 class="mb-0">Run a Backtest</h2>
-                </div>
-                <div class="card-body">
-                    <form id="backtest-form">
-                        <!-- Strategy Selection -->
-                        <div class="mb-4">
-                            <h4>1. Select Strategy</h4>
-                            <div class="mb-3">
-                                <label for="strategy-selector" class="form-label">Strategy</label>
-                                <select id="strategy-selector" name="strategy" class="form-select" required>
-                                    <option value="" selected disabled>Select a strategy</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Strategy Parameters (dynamically populated) -->
-                            <div id="strategy-parameters"></div>
-                        </div>
-                        
-                        <!-- Data Selection -->
-                        <div class="mb-4">
-                            <h4>2. Select Data</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="symbols" class="form-label">Symbols (comma separated)</label>
-                                        <input type="text" class="form-control" id="symbols" name="symbols" placeholder="AAPL, MSFT, GOOG" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="data-source" class="form-label">Data Source</label>
-                                        <select class="form-select" id="data-source" name="data-source">
-                                            <option value="default" selected>Default</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="start-date" class="form-label">Start Date</label>
-                                        <input type="date" class="form-control" id="start-date" name="start-date" value="2020-01-01" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="end-date" class="form-label">End Date</label>
-                                        <input type="date" class="form-control" id="end-date" name="end-date" value="2023-12-31" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="timeframe" class="form-label">Timeframe</label>
-                                        <select class="form-select" id="timeframe" name="timeframe">
-                                            <option value="1d" selected>Daily</option>
-                                            <option value="1h">Hourly</option>
-                                            <option value="1m">Minute</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Execution Settings -->
-                        <div class="mb-4">
-                            <h4>3. Execution Settings</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="initial-capital" class="form-label">Initial Capital</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">$</span>
-                                            <input type="number" class="form-control" id="initial-capital" name="initial-capital" value="100000" step="1000" min="1000" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="position-size" class="form-label">Position Sizing</label>
-                                        <select class="form-select" id="position-size" name="position-size">
-                                            <option value="equal" selected>Equal Weight</option>
-                                            <option value="percent">Percent of Capital</option>
-                                            <option value="fixed">Fixed Dollar Amount</option>
-                                            <option value="volatility">Volatility Adjusted</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="commission" class="form-label">Commission (% per trade)</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="commission" name="commission" value="0.001" step="0.0001" min="0">
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="slippage" class="form-label">Slippage (% per trade)</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="slippage" name="slippage" value="0.0005" step="0.0001" min="0">
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Output Settings -->
-                        <div class="mb-4">
-                            <h4>4. Output Settings</h4>
-                            <div class="mb-3">
-                                <label class="form-label">Performance Metrics</label>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="total_return" id="metric-total-return" name="metrics" checked>
-                                            <label class="form-check-label" for="metric-total-return">
-                                                Total Return
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="sharpe_ratio" id="metric-sharpe" name="metrics" checked>
-                                            <label class="form-check-label" for="metric-sharpe">
-                                                Sharpe Ratio
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="max_drawdown" id="metric-drawdown" name="metrics" checked>
-                                            <label class="form-check-label" for="metric-drawdown">
-                                                Maximum Drawdown
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="volatility" id="metric-volatility" name="metrics">
-                                            <label class="form-check-label" for="metric-volatility">
-                                                Volatility
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="win_rate" id="metric-win-rate" name="metrics" checked>
-                                            <label class="form-check-label" for="metric-win-rate">
-                                                Win Rate
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="profit_factor" id="metric-profit-factor" name="metrics">
-                                            <label class="form-check-label" for="metric-profit-factor">
-                                                Profit Factor
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="cagr" id="metric-cagr" name="metrics">
-                                            <label class="form-check-label" for="metric-cagr">
-                                                CAGR
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="calmar_ratio" id="metric-calmar" name="metrics">
-                                            <label class="form-check-label" for="metric-calmar">
-                                                Calmar Ratio
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="sortino_ratio" id="metric-sortino" name="metrics">
-                                            <label class="form-check-label" for="metric-sortino">
-                                                Sortino Ratio
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="include-trades" name="include-trades" checked>
-                                        <label class="form-check-label" for="include-trades">Include Trade List</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="include-equity-curve" name="include-equity-curve" checked>
-                                        <label class="form-check-label" for="include-equity-curve">Include Equity Curve</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Submit Button -->
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">Run Backtest</button>
-                        </div>
-                    </form>
+                <div class="card-body text-center">
+                    <h2 class="mb-4">Ready to Start Backtesting?</h2>
+                    <p class="lead mb-4">Sign up or log in to access our GPU-accelerated backtesting platform and validate your trading strategies.</p>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary me-md-2">Sign Up</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-secondary">Log In</a>
+                    </div>
                 </div>
             </div>
         </section>
-        
-        <!-- Status Container -->
-        <div id="status-container" class="mt-4"></div>
-        
-        <!-- Results Container -->
-        <div id="results-container" class="mt-4"></div>
     </main>
 
     <!-- Footer -->
@@ -297,7 +98,6 @@
 {% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="/static/js/main.js"></script>
     <script>
         // Initialize Feather icons
         document.addEventListener('DOMContentLoaded', () => {

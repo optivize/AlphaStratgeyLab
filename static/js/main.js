@@ -557,14 +557,63 @@ function setupAIBacktestForm() {
     
     if (!aiBacktestForm) return;
     
-    // Set up suggestion buttons
-    document.querySelectorAll('.suggestion-btn').forEach(button => {
+    // Add animated highlight effect to suggestions
+    function highlightSuggestions() {
+        const suggestions = document.querySelectorAll('.suggestion-pill');
+        if (suggestions.length === 0) return;
+        
+        // Add pulsing animation to random suggestion
+        const randomIndex = Math.floor(Math.random() * suggestions.length);
+        suggestions.forEach((pill, index) => {
+            pill.classList.remove('suggestion-pulse');
+            if (index === randomIndex) {
+                pill.classList.add('suggestion-pulse');
+            }
+        });
+        
+        // Repeat the animation every few seconds
+        setTimeout(highlightSuggestions, 5000);
+    }
+    
+    // Initialize suggestion highlights
+    setTimeout(highlightSuggestions, 1000);
+    
+    // Set up suggestion buttons with enhanced interaction
+    document.querySelectorAll('.suggestion-pill').forEach(button => {
         button.addEventListener('click', function() {
             const suggestionText = this.textContent.trim();
             backtestRequestTextarea.value = suggestionText;
             backtestRequestTextarea.focus();
+            
+            // Add visual feedback
+            this.classList.add('suggestion-selected');
+            setTimeout(() => {
+                this.classList.remove('suggestion-selected');
+            }, 500);
+            
+            // Auto-submit if enabled
+            if (document.getElementById('auto-submit-toggle') && 
+                document.getElementById('auto-submit-toggle').checked) {
+                setTimeout(() => {
+                    document.getElementById('generate-backtest-btn').click();
+                }, 300);
+            }
         });
     });
+    
+    // Add auto-submit toggle if it exists
+    const autoSubmitToggle = document.getElementById('auto-submit-toggle');
+    if (autoSubmitToggle) {
+        autoSubmitToggle.addEventListener('change', function() {
+            localStorage.setItem('autoSubmit', this.checked);
+        });
+        
+        // Load saved preference
+        const savedAutoSubmit = localStorage.getItem('autoSubmit');
+        if (savedAutoSubmit !== null) {
+            autoSubmitToggle.checked = savedAutoSubmit === 'true';
+        }
+    }
     
     aiBacktestForm.addEventListener('submit', function(e) {
         e.preventDefault();

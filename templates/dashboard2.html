@@ -1,0 +1,1100 @@
+{% extends 'layout.html' %}
+
+{% block head %}
+<style>
+    /* Suggestion pill styling */
+    .suggestion-pill {
+        border-radius: 50px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        margin-right: 0.5rem;
+        background-color: var(--bs-primary-bg-subtle);
+        color: var(--bs-primary);
+        border: 1px solid var(--bs-primary-border-subtle);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: inline-block;
+    }
+    
+    .suggestion-pill:hover {
+        background-color: var(--bs-primary);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-selected {
+        background-color: var(--bs-primary) !important;
+        color: white !important;
+        transform: scale(0.95);
+    }
+    
+    .suggestion-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.5);
+        }
+        70% {
+            box-shadow: 0 0 0 6px rgba(13, 110, 253, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+    
+    /* Card styling */
+    .card-dark-header {
+        background-color: #2c3e50;
+        color: white;
+    }
+    
+    .ai-assistant-container {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Make the dashboard more modern */
+    .dashboard-container {
+        padding: 1.5rem 0;
+    }
+    
+    .dashboard-title {
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+    
+    /* Switch styling */
+    .form-switch .form-check-input {
+        width: 2.5em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="dashboard-title">Trading Dashboard</h1>
+                <div>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBacktestModal">
+                        <i data-feather="plus-circle"></i> New Backtest
+                    </button>
+                </div>
+            </div>
+            <p class="text-muted">Welcome, {{ current_user.username }}!</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- AI Backtest Assistant -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 ai-assistant-container">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i data-feather="cpu"></i> AI Backtest Assistant</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Describe what you want to test and our AI will create a backtest for you.</p>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Suggestions:</h6>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto-submit-toggle">
+                                <label class="form-check-label small" for="auto-submit-toggle">Auto-submit</label>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap">
+                            <span class="suggestion-pill">Moving average crossover for AAPL</span>
+                            <span class="suggestion-pill">Bollinger bands for TSLA</span>
+                            <span class="suggestion-pill">Test momentum strategy on tech stocks</span>
+                            <span class="suggestion-pill">Mean reversion with $50k capital</span>
+                            <span class="suggestion-pill">Compare AAPL and GOOGL with MA crossover</span>
+                            <span class="suggestion-pill">Bollinger bands with 2.5 standard deviations</span>
+                        </div>
+                    </div>
+                    
+                    <form id="ai-backtest-form">
+                        <div class="mb-3">
+                            <label for="backtest-request" class="form-label">What would you like to backtest?</label>
+                            <textarea class="form-control" id="backtest-request" rows="3" placeholder="e.g., Test a moving average crossover strategy on Apple stock for the past year"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="generate-backtest-btn">
+                            <i data-feather="zap"></i> Generate Backtest
+                        </button>
+                    </form>
+                    
+                    <div id="ai-response-container" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">AI Recommendation</h6>
+                            </div>
+                            <div class="card-body" id="ai-response-content">
+                                <!-- AI response will be inserted here -->
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-success w-100" id="apply-config-btn">
+                                    <i data-feather="check-circle"></i> Apply Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Watchlist Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i data-feather="star"></i> Watchlist</h5>
+                </div>
+                <div class="card-body">
+                    <div id="watchlist-container">
+                        {% if watchlist %}
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in watchlist %}
+                                    <tr>
+                                        <td>{{ item.symbol }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary quick-backtest-btn" data-symbol="{{ item.symbol }}">
+                                                <i data-feather="bar-chart-2"></i> Backtest
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger remove-watchlist-btn" data-symbol="{{ item.symbol }}">
+                                                <i data-feather="trash-2"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3"><i data-feather="list" style="width: 48px; height: 48px;"></i></div>
+                                <h5>Your watchlist is empty</h5>
+                                <p class="text-muted">Add stocks to track and quickly access for backtesting</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <form id="add-watchlist-form">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="watchlist-symbol" placeholder="Symbol (e.g., AAPL)">
+                            <button class="btn btn-primary" type="submit">
+                                <i data-feather="plus"></i> Add
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Backtests -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i data-feather="clock"></i> Recent Backtests</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recent-backtests-container">
+                        {% if backtests %}
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Strategy</th>
+                                        <th>Symbols</th>
+                                        <th>Date Range</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for backtest in backtests %}
+                                    <tr>
+                                        <td><small class="text-muted">{{ backtest.id[:8] }}</small></td>
+                                        <td>{{ backtest.request.strategy.name }}</td>
+                                        <td>{{ backtest.request.data.symbols|join(', ') }}</td>
+                                        <td><small>{{ backtest.request.data.start_date }} to {{ backtest.request.data.end_date }}</small></td>
+                                        <td>
+                                            {% if backtest.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                            {% elif backtest.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                            {% elif backtest.status == 'running' %}
+                                            <span class="badge bg-warning">Running</span>
+                                            {% else %}
+                                            <span class="badge bg-info">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><small>{{ backtest.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary view-results-btn" data-backtest-id="{{ backtest.id }}">
+                                                <i data-feather="eye"></i> View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <div class="mb-3"><i data-feather="bar-chart-2" style="width: 48px; height: 48px;"></i></div>
+                                <h5>No backtests yet</h5>
+                                <p class="text-muted">Create a new backtest to see results here</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status and Results Containers -->
+    <div id="status-container" style="display: none;" class="mt-4"></div>
+    <div id="results-container" style="display: none;" class="mt-4"></div>
+</div>
+
+<!-- New Backtest Modal -->
+<div class="modal fade" id="newBacktestModal" tabindex="-1" aria-labelledby="newBacktestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="newBacktestModalLabel">Create New Backtest</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="backtest-form">
+                    <div class="row">
+                        <!-- Strategy Selection -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Strategy</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="strategy-select" class="form-label">Strategy Type</label>
+                                        <select class="form-select" id="strategy-select" name="strategy">
+                                            <option value="" selected disabled>Select a strategy</option>
+                                            <option value="moving_average_crossover">Moving Average Crossover</option>
+                                            <option value="bollinger_bands">Bollinger Bands</option>
+                                            <option value="momentum">Momentum</option>
+                                            <option value="mean_reversion">Mean Reversion</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div id="strategy-parameters">
+                                        <!-- Strategy parameters will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data and Execution Settings -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Data & Execution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="symbol-input" class="form-label">Symbols</label>
+                                        <input type="text" class="form-control" id="symbol-input" name="symbols" placeholder="Symbol(s) separated by comma (e.g., AAPL, MSFT)">
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="start-date" class="form-label">Start Date</label>
+                                            <input type="date" class="form-control" id="start-date" name="start-date">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="end-date" class="form-label">End Date</label>
+                                            <input type="date" class="form-control" id="end-date" name="end-date">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="timeframe" class="form-label">Timeframe</label>
+                                        <select class="form-select" id="timeframe" name="timeframe">
+                                            <option value="1d" selected>Daily (1d)</option>
+                                            <option value="1h">Hourly (1h)</option>
+                                            <option value="1m">Minute (1m)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="data-source" class="form-label">Data Source</label>
+                                        <select class="form-select" id="data-source" name="data-source">
+                                            <option value="default" selected>Default</option>
+                                            <option value="custom">Custom</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <hr>
+                                    
+                                    <div class="mb-3">
+                                        <label for="initial-capital" class="form-label">Initial Capital</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="initial-capital" name="initial-capital" value="100000">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="position-size" class="form-label">Position Sizing</label>
+                                        <select class="form-select" id="position-size" name="position-size">
+                                            <option value="equal" selected>Equal Weight</option>
+                                            <option value="percent">Percentage of Capital</option>
+                                            <option value="fixed">Fixed Dollar Amount</option>
+                                            <option value="volatility">Volatility Adjusted</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="commission" class="form-label">Commission (per trade)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="commission" name="commission" value="0.001" step="0.001">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="slippage" class="form-label">Slippage</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="slippage" name="slippage" value="0.0005" step="0.0001">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Selection -->
+                    <div class="row mt-3 mb-3">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Output Options</h5>
+                                </div>
+                                <div class="card-body">
+                                    <label class="form-label">Performance Metrics</label>
+                                    <div class="row metrics-container">
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="metrics" value="sharpe_ratio" id="metric-sharpe-ratio" checked>
+                                                <label class="form-check-label" for="metric-sharpe-ratio">
+                                                    Sharpe Ratio
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="metrics" value="max_drawdown" id="metric-max-drawdown" checked>
+                                                <label class="form-check-label" for="metric-max-drawdown">
+                                                    Maximum Drawdown
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="metrics" value="total_return" id="metric-total-return" checked>
+                                                <label class="form-check-label" for="metric-total-return">
+                                                    Total Return
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="metrics" value="win_rate" id="metric-win-rate" checked>
+                                                <label class="form-check-label" for="metric-win-rate">
+                                                    Win Rate
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="include-trades" id="include-trades" checked>
+                                                <label class="form-check-label" for="include-trades">
+                                                    Include trades in results
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="include-equity-curve" id="include-equity-curve" checked>
+                                                <label class="form-check-label" for="include-equity-curve">
+                                                    Include equity curve in results
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Run Backtest</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backtest Results Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Backtest Results</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="results-content">
+                <!-- Results content will be loaded here -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading results...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Feather icons
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+        
+        // Add stock to watchlist
+        const addWatchlistForm = document.getElementById('add-watchlist-form');
+        if (addWatchlistForm) {
+            addWatchlistForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const symbol = document.getElementById('watchlist-symbol').value.trim().toUpperCase();
+                if (!symbol) return;
+                
+                fetch('/api/v1/watchlist/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Refresh the page to show updated watchlist
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding stock to watchlist');
+                });
+            });
+        }
+        
+        // Remove stock from watchlist
+        document.querySelectorAll('.remove-watchlist-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const symbol = this.getAttribute('data-symbol');
+                
+                if (confirm(`Remove ${symbol} from your watchlist?`)) {
+                    fetch('/api/v1/watchlist/remove', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ symbol })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+                        
+                        // Refresh the page to show updated watchlist
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error removing stock from watchlist');
+                    });
+                }
+            });
+        });
+        
+        // Quick backtest button for watchlist items
+        document.querySelectorAll('.quick-backtest-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const symbol = this.getAttribute('data-symbol');
+                
+                // Open the backtest modal and pre-fill the symbol
+                const modal = new bootstrap.Modal(document.getElementById('newBacktestModal'));
+                modal.show();
+                
+                // Set the symbol
+                document.getElementById('symbol-input').value = symbol;
+                
+                // Set default date range (past year)
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                
+                document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
+                document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
+            });
+        });
+        
+        // Setup backtest form submission
+        const backtestForm = document.getElementById('backtest-form');
+        if (backtestForm) {
+            backtestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const strategySelect = document.getElementById('strategy-select');
+                const strategyValue = strategySelect.value;
+                const strategyText = strategySelect.options[strategySelect.selectedIndex].text;
+                
+                const symbols = document.getElementById('symbol-input').value.split(',').map(s => s.trim().toUpperCase());
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                const initialCapital = parseFloat(document.getElementById('initial-capital').value);
+                const timeframe = document.getElementById('timeframe').value;
+                
+                if (!strategyValue || symbols.length === 0 || !startDate || !endDate) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                // Get strategy parameters
+                const parameters = {};
+                document.querySelectorAll('#strategy-parameters input').forEach(input => {
+                    parameters[input.name.replace('param-', '')] = parseFloat(input.value);
+                });
+                
+                const payload = {
+                    strategy: {
+                        name: strategyText,
+                        id: strategyValue,
+                        parameters: parameters
+                    },
+                    data: {
+                        symbols,
+                        start_date: startDate,
+                        end_date: endDate,
+                        timeframe: timeframe
+                    },
+                    execution: {
+                        initial_capital: initialCapital,
+                        position_size: document.getElementById('position-size').value,
+                        commission: parseFloat(document.getElementById('commission').value),
+                        slippage: parseFloat(document.getElementById('slippage').value)
+                    },
+                    output: {
+                        metrics: Array.from(document.querySelectorAll('input[name="metrics"]:checked')).map(el => el.value),
+                        include_trades: document.getElementById('include-trades').checked,
+                        include_equity_curve: document.getElementById('include-equity-curve').checked
+                    }
+                };
+                
+                // Show loading state
+                const submitBtn = backtestForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                
+                fetch('/api/v1/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Close the modal and refresh the page
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('newBacktestModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    alert('Backtest submitted successfully! ID: ' + data.backtest_id);
+                    window.location.reload();
+                })
+                .catch(error => {
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    
+                    console.error('Error:', error);
+                    alert('Error submitting backtest');
+                });
+            });
+        }
+        
+        // View backtest results
+        document.querySelectorAll('.view-results-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const backtestId = this.getAttribute('data-backtest-id');
+                const resultsContent = document.getElementById('results-content');
+                
+                // Show the modal with loading state
+                const resultsModal = new bootstrap.Modal(document.getElementById('resultsModal'));
+                resultsModal.show();
+                
+                // Fetch the results
+                fetch(`/api/v1/backtest/${backtestId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            resultsContent.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                            return;
+                        }
+                        
+                        // Format and display the results
+                        let html = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Strategy</h5>
+                                    <p>${data.request.strategy.name}</p>
+                                    
+                                    <h5>Symbols</h5>
+                                    <p>${data.request.data.symbols.join(', ')}</p>
+                                    
+                                    <h5>Period</h5>
+                                    <p>${data.request.data.start_date} to ${data.request.data.end_date}</p>
+                                    
+                                    <h5>Initial Capital</h5>
+                                    <p>$${data.request.execution.initial_capital.toLocaleString()}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Performance Metrics</h5>
+                                    <table class="table table-sm">
+                                        <tbody>
+                        `;
+                        
+                        if (data.results && data.results.overall_metrics) {
+                            const metrics = data.results.overall_metrics;
+                            
+                            if (metrics.total_return !== null) {
+                                html += `
+                                    <tr>
+                                        <th>Total Return</th>
+                                        <td>${(metrics.total_return * 100).toFixed(2)}%</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            if (metrics.sharpe_ratio !== null) {
+                                html += `
+                                    <tr>
+                                        <th>Sharpe Ratio</th>
+                                        <td>${metrics.sharpe_ratio.toFixed(2)}</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            if (metrics.max_drawdown !== null) {
+                                html += `
+                                    <tr>
+                                        <th>Max Drawdown</th>
+                                        <td>${(metrics.max_drawdown * 100).toFixed(2)}%</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            if (metrics.win_rate !== null) {
+                                html += `
+                                    <tr>
+                                        <th>Win Rate</th>
+                                        <td>${(metrics.win_rate * 100).toFixed(2)}%</td>
+                                    </tr>
+                                `;
+                            }
+                        }
+                        
+                        html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                        
+                        if (data.results && data.results.equity_curve) {
+                            html += `
+                                <div class="row mt-4">
+                                    <div class="col-md-12">
+                                        <h5>Equity Curve</h5>
+                                        <canvas id="equity-curve-chart" height="200"></canvas>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        if (data.results && data.results.trades && data.results.trades.length > 0) {
+                            html += `
+                                <div class="row mt-4">
+                                    <div class="col-md-12">
+                                        <h5>Trades</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Symbol</th>
+                                                        <th>Entry Date</th>
+                                                        <th>Exit Date</th>
+                                                        <th>Entry Price</th>
+                                                        <th>Exit Price</th>
+                                                        <th>P&L</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                            `;
+                            
+                            // Limit to first 20 trades for performance
+                            const tradesLimit = Math.min(data.results.trades.length, 20);
+                            for (let i = 0; i < tradesLimit; i++) {
+                                const trade = data.results.trades[i];
+                                const pnlColor = trade.pnl > 0 ? 'text-success' : (trade.pnl < 0 ? 'text-danger' : '');
+                                
+                                html += `
+                                    <tr>
+                                        <td>${trade.symbol}</td>
+                                        <td>${trade.entry_date}</td>
+                                        <td>${trade.exit_date || '-'}</td>
+                                        <td>$${trade.entry_price.toFixed(2)}</td>
+                                        <td>$${trade.exit_price ? trade.exit_price.toFixed(2) : '-'}</td>
+                                        <td class="${pnlColor}">${trade.pnl ? '$' + trade.pnl.toFixed(2) : '-'}</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            html += `
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Update the modal content
+                        resultsContent.innerHTML = html;
+                        
+                        // Initialize equity curve chart if available
+                        if (data.results && data.results.equity_curve) {
+                            const ctx = document.getElementById('equity-curve-chart').getContext('2d');
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: Array.from({ length: data.results.equity_curve.length }, (_, i) => i + 1),
+                                    datasets: [{
+                                        label: 'Equity Curve',
+                                        data: data.results.equity_curve,
+                                        borderColor: 'rgba(75, 192, 192, 1)',
+                                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                        tension: 0.1,
+                                        fill: true
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        title: {
+                                            display: true,
+                                            text: 'Portfolio Equity Over Time'
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: false,
+                                            title: {
+                                                display: true,
+                                                text: 'Portfolio Value ($)'
+                                            }
+                                        },
+                                        x: {
+                                            title: {
+                                                display: true,
+                                                text: 'Time Period'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        resultsContent.innerHTML = `<div class="alert alert-danger">Error loading results: ${error.message}</div>`;
+                    });
+            });
+        });
+        
+        // Set up AI Backtest Assistant
+        const aiBacktestForm = document.getElementById('ai-backtest-form');
+        const aiResponseContainer = document.getElementById('ai-response-container');
+        const aiResponseContent = document.getElementById('ai-response-content');
+        const applyConfigBtn = document.getElementById('apply-config-btn');
+        const backtestRequestTextarea = document.getElementById('backtest-request');
+        
+        if (aiBacktestForm) {
+            // Add animated highlight effect to suggestions
+            function highlightSuggestions() {
+                const suggestions = document.querySelectorAll('.suggestion-pill');
+                if (suggestions.length === 0) return;
+                
+                // Add pulsing animation to random suggestion
+                const randomIndex = Math.floor(Math.random() * suggestions.length);
+                suggestions.forEach((pill, index) => {
+                    pill.classList.remove('suggestion-pulse');
+                    if (index === randomIndex) {
+                        pill.classList.add('suggestion-pulse');
+                    }
+                });
+                
+                // Repeat the animation every few seconds
+                setTimeout(highlightSuggestions, 5000);
+            }
+            
+            // Initialize suggestion highlights
+            setTimeout(highlightSuggestions, 1000);
+            
+            // Set up suggestion buttons with enhanced interaction
+            document.querySelectorAll('.suggestion-pill').forEach(button => {
+                button.addEventListener('click', function() {
+                    const suggestionText = this.textContent.trim();
+                    backtestRequestTextarea.value = suggestionText;
+                    backtestRequestTextarea.focus();
+                    
+                    // Add visual feedback
+                    this.classList.add('suggestion-selected');
+                    setTimeout(() => {
+                        this.classList.remove('suggestion-selected');
+                    }, 500);
+                    
+                    // Auto-submit if enabled
+                    if (document.getElementById('auto-submit-toggle') && 
+                        document.getElementById('auto-submit-toggle').checked) {
+                        setTimeout(() => {
+                            document.getElementById('generate-backtest-btn').click();
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Add auto-submit toggle
+            const autoSubmitToggle = document.getElementById('auto-submit-toggle');
+            if (autoSubmitToggle) {
+                autoSubmitToggle.addEventListener('change', function() {
+                    localStorage.setItem('autoSubmit', this.checked);
+                });
+                
+                // Load saved preference
+                const savedAutoSubmit = localStorage.getItem('autoSubmit');
+                if (savedAutoSubmit !== null) {
+                    autoSubmitToggle.checked = savedAutoSubmit === 'true';
+                }
+            }
+            
+            // Submit AI backtest form
+            aiBacktestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userRequest = backtestRequestTextarea.value.trim();
+                
+                if (!userRequest) {
+                    alert('Please describe your backtest requirements');
+                    return;
+                }
+                
+                // Show loading indicator
+                const submitButton = document.getElementById('generate-backtest-btn');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                
+                // Send the request to our backend API
+                fetch('/api/v1/ai/backtest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: userRequest })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Generate a UI-friendly response from the API data
+                    const response = formatAIBacktestResponse(data);
+                    
+                    // Display the response
+                    aiResponseContent.innerHTML = response.html;
+                    aiResponseContainer.style.display = 'block';
+                    
+                    // Store the configuration data for the "Apply" button
+                    applyConfigBtn.setAttribute('data-config', JSON.stringify(response.config));
+                    
+                    // Reset the submit button
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing your request');
+                    
+                    // Reset the submit button
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                });
+            });
+            
+            // Handle "Apply Configuration" button click
+            if (applyConfigBtn) {
+                applyConfigBtn.addEventListener('click', function() {
+                    const configData = JSON.parse(this.getAttribute('data-config'));
+                    
+                    // Open the backtest modal
+                    const backtestModal = new bootstrap.Modal(document.getElementById('newBacktestModal'));
+                    backtestModal.show();
+                    
+                    // Set the form values based on the AI-generated configuration
+                    document.getElementById('strategy-select').value = configData.strategy;
+                    document.getElementById('symbol-input').value = configData.symbol;
+                    document.getElementById('start-date').value = configData.startDate;
+                    document.getElementById('end-date').value = configData.endDate;
+                    document.getElementById('initial-capital').value = configData.initialCapital;
+                    
+                    // Strategy parameters will be set after they're loaded
+                    setTimeout(() => {
+                        // Trigger change event to load strategy parameters
+                        document.getElementById('strategy-select').dispatchEvent(new Event('change'));
+                        
+                        // Set parameters after a delay
+                        setTimeout(() => {
+                            Object.entries(configData.parameters).forEach(([key, value]) => {
+                                const input = document.querySelector(`#param-${key}`);
+                                if (input) {
+                                    input.value = value;
+                                }
+                            });
+                        }, 500);
+                    }, 100);
+                });
+            }
+        }
+    });
+    
+    // Format the AI backtest response
+    function formatAIBacktestResponse(data) {
+        // Extract strategy information
+        const strategyId = data.strategy.id;
+        const strategyName = data.strategy.name;
+        const strategyParams = data.strategy.parameters;
+        
+        // Extract data information
+        const symbols = data.data.symbols;
+        const startDate = data.data.start_date;
+        const endDate = data.data.end_date;
+        
+        // Extract execution information
+        const initialCapital = data.execution.initial_capital;
+        
+        // Create a configuration object for the "Apply" button
+        const config = {
+            strategy: strategyId,
+            symbol: symbols.join(', '),
+            startDate: startDate,
+            endDate: endDate,
+            initialCapital: initialCapital,
+            parameters: strategyParams
+        };
+        
+        // Generate HTML for the response
+        const html = `
+            <div class="mb-3">
+                <h6>I've analyzed your request and created the following backtest configuration:</h6>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Strategy</span>
+                        <span class="badge bg-primary">${strategyName}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Symbol(s)</span>
+                        <span class="badge bg-secondary">${symbols.join(', ')}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Time Period</span>
+                        <span class="badge bg-info">${startDate} to ${endDate}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Initial Capital</span>
+                        <span class="badge bg-success">$${initialCapital.toLocaleString()}</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div>
+                <h6>Strategy Parameters:</h6>
+                <ul class="list-group">
+                    ${Object.entries(strategyParams).map(([key, value]) => `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>${formatParameterName(key)}</span>
+                            <span class="badge bg-dark">${value}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+                <p class="text-muted mt-2">Click "Apply Configuration" to use these settings in the backtest form.</p>
+            </div>
+        `;
+        
+        return { html, config };
+    }
+    
+    // Helper function to format parameter names
+    function formatParameterName(name) {
+        return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+</script>
+{% endblock %}

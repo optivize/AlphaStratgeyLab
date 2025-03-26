@@ -4,7 +4,7 @@ import os
 class Settings:
     # API settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "GPU-Powered Stock Backtesting Engine API"
+    PROJECT_NAME: str = "StockTester API"
     
     # Database connection
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost/backtest")

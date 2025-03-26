@@ -1,75 +1,78 @@
 import axios from 'axios';
-import { 
-  Strategy, 
-  BacktestDefinition, 
-  BacktestResponse, 
-  WatchlistItem,
-  ApiResponse
-} from '../types';
+import { BacktestDefinition, WatchlistItem, ApiResponse, BacktestResponse } from '../types';
 
-// Axios defaults
-axios.defaults.baseURL = '/api/v1';
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-axios.defaults.withCredentials = true;
+// Create axios instance with default config
+const apiClient = axios.create({
+  baseURL: '/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Important for cookies/sessions
+});
 
-// API endpoints
+// Add auth token to requests if available
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// API methods for the application
 export const api = {
   // Authentication
   login: (email: string, password: string) => 
-    axios.post('/auth/login', { email, password }),
+    apiClient.post('/auth/login', { email, password }),
   
   register: (username: string, email: string, password: string) => 
-    axios.post('/auth/register', { username, email, password }),
+    apiClient.post('/auth/register', { username, email, password }),
   
   logout: () => 
-    axios.post('/auth/logout'),
+    apiClient.post('/auth/logout'),
   
-  getCurrentUser: () => 
-    axios.get('/auth/current_user'),
+  checkAuth: () => 
+    apiClient.get('/auth/me'),
   
-  // Strategies
-  getStrategies: () => 
-    axios.get<ApiResponse<Strategy[]>>('/strategies'),
-  
-  getStrategy: (id: string) => 
-    axios.get<ApiResponse<Strategy>>(`/strategies/${id}`),
-  
-  // Backtests
+  // Backtest operations
   submitBacktest: (backtest: BacktestDefinition) => 
-    axios.post<ApiResponse<BacktestResponse>>('/backtests', backtest),
+    apiClient.post<ApiResponse<BacktestResponse>>('/backtest', backtest),
   
-  getBacktestResults: (id: string) => 
-    axios.get<ApiResponse<BacktestResponse>>(`/backtests/${id}`),
+  getBacktestResults: (backtestId: string) => 
+    apiClient.get<ApiResponse<BacktestResponse>>(`/backtest/${backtestId}`),
   
   // AI Backtest
   generateAIBacktest: (prompt: string) => 
-    axios.post<ApiResponse<BacktestResponse>>('/ai-backtest', { prompt }),
+    apiClient.post<ApiResponse<BacktestResponse>>('/ai/backtest', { prompt }),
   
-  // Watchlist
+  // Watchlist operations
   getWatchlist: () => 
-    axios.get<ApiResponse<WatchlistItem[]>>('/watchlist'),
+    apiClient.get<ApiResponse<WatchlistItem[]>>('/watchlist'),
   
   addToWatchlist: (symbol: string) => 
-    axios.post<ApiResponse<WatchlistItem>>('/watchlist', { symbol }),
+    apiClient.post<ApiResponse<WatchlistItem>>('/watchlist', { symbol }),
   
   removeFromWatchlist: (symbol: string) => 
-    axios.delete<ApiResponse<void>>(`/watchlist/${symbol}`),
+    apiClient.delete<ApiResponse<void>>(`/watchlist/${symbol}`),
   
-  // Market Data
-  getAvailableSymbols: (source?: string) => 
-    axios.get<ApiResponse<string[]>>('/data/symbols', { params: { source } }),
-  
-  getDataSources: () => 
-    axios.get<ApiResponse<any[]>>('/data/sources'),
-  
+  // Data operations
   uploadMarketData: (formData: FormData) => 
-    axios.post<ApiResponse<any>>('/data/upload', formData, {
+    apiClient.post<ApiResponse<any>>('/data/upload', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+        'Content-Type': 'multipart/form-data',
+      },
     }),
   
-  // Metrics
+  // Strategy operations
+  getStrategies: () => 
+    apiClient.get<ApiResponse<any>>('/strategies'),
+  
+  getStrategyDetails: (strategyId: string) => 
+    apiClient.get<ApiResponse<any>>(`/strategies/${strategyId}`),
+  
+  // Metrics operations
   getAvailableMetrics: () => 
-    axios.get<ApiResponse<any[]>>('/metrics')
+    apiClient.get<ApiResponse<string[]>>('/metrics'),
 };
+
+export default api;

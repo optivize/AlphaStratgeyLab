@@ -257,7 +257,7 @@ def create_backtest():
             session.commit()
         
         # In a real implementation, we would now send the job to the 
-        # GPU processing engine via API call or message queue
+        # processing engine via API call or message queue
         
         return jsonify({
             "backtest_id": backtest_id,

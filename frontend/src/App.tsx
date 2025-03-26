@@ -16,44 +16,47 @@ import PrivateRoute from './components/PrivateRoute';
 
 // Context providers
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   return (
-    <div className="App" data-bs-theme="dark">
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected routes */}
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-          <Route path="/backtest/new" element={
-            <PrivateRoute>
-              <Backtest />
-            </PrivateRoute>
-          } />
-          <Route path="/backtest/:id" element={
-            <PrivateRoute>
-              <BacktestResults />
-            </PrivateRoute>
-          } />
-          <Route path="/watchlist" element={
-            <PrivateRoute>
-              <Watchlist />
-            </PrivateRoute>
-          } />
-          <Route path="/ai-backtest" element={
-            <PrivateRoute>
-              <AIBacktest />
-            </PrivateRoute>
-          } />
-        </Routes>
-      </AuthProvider>
+    <div className="App">
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/backtest/new" element={
+              <PrivateRoute>
+                <Backtest />
+              </PrivateRoute>
+            } />
+            <Route path="/backtest/:id" element={
+              <PrivateRoute>
+                <BacktestResults />
+              </PrivateRoute>
+            } />
+            <Route path="/watchlist" element={
+              <PrivateRoute>
+                <Watchlist />
+              </PrivateRoute>
+            } />
+            <Route path="/ai-backtest" element={
+              <PrivateRoute>
+                <AIBacktest />
+              </PrivateRoute>
+            } />
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </div>
   );
 }

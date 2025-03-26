@@ -9,8 +9,8 @@ body {
     font-weight: bold;
 }
 
-.gpu-accent {
-    color: #76b900; /* NVIDIA green */
+.brand-accent {
+    color: #0d6efd; /* Primary blue */
 }
 
 .main-container {

@@ -11,6 +11,9 @@ import BacktestResults from './pages/BacktestResults';
 import Watchlist from './pages/Watchlist';
 import AIBacktest from './pages/AIBacktest';
 
+// Components
+import PrivateRoute from './components/PrivateRoute';
+
 // Context providers
 import { AuthProvider } from './context/AuthContext';
 
@@ -22,11 +25,33 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/backtest/new" element={<Backtest />} />
-          <Route path="/backtest/:id" element={<BacktestResults />} />
-          <Route path="/watchlist" element={<Watchlist />} />
-          <Route path="/ai-backtest" element={<AIBacktest />} />
+          
+          {/* Protected routes */}
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/backtest/new" element={
+            <PrivateRoute>
+              <Backtest />
+            </PrivateRoute>
+          } />
+          <Route path="/backtest/:id" element={
+            <PrivateRoute>
+              <BacktestResults />
+            </PrivateRoute>
+          } />
+          <Route path="/watchlist" element={
+            <PrivateRoute>
+              <Watchlist />
+            </PrivateRoute>
+          } />
+          <Route path="/ai-backtest" element={
+            <PrivateRoute>
+              <AIBacktest />
+            </PrivateRoute>
+          } />
         </Routes>
       </AuthProvider>
     </div>

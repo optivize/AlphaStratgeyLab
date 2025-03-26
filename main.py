@@ -477,7 +477,7 @@ def ai_backtest():
                 # Make API request
                 logger.debug("Making request to Together AI API")
                 response = client.chat.completions.create(
-                    model="meta-llama/Llama-3-8B-Instruct",
+                    model="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}

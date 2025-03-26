@@ -1,0 +1,77 @@
+.App {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.backtest-pill {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--bs-secondary);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+  color: var(--bs-body-color);
+  border-radius: 20px;
+  padding: 6px 12px;
+  margin: 4px;
+  display: inline-block;
+}
+
+.backtest-pill:hover {
+  background-color: rgba(var(--bs-secondary-rgb), 0.3);
+}
+
+.strategy-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.strategy-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.chart-container {
+  height: 300px;
+  margin-bottom: 30px;
+}
+
+.metrics-table th {
+  width: 40%;
+  text-align: left;
+}
+
+.metrics-table td {
+  text-align: right;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.login-container, .register-container {
+  max-width: 400px;
+  margin: 60px auto;
+  padding: 30px;
+  border-radius: 8px;
+  background-color: var(--bs-dark);
+}
+
+.navbar-brand img {
+  height: 30px;
+  margin-right: 10px;
+}

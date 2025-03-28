@@ -59,10 +59,48 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Try to install CUDA-specific packages if a GPU is available
+# Check for CUDA and install appropriate Python packages
 if command -v nvcc &> /dev/null; then
-    echo "Installing CUDA-specific packages..."
-    pip install pycuda cupy-cuda11x || echo "Warning: Failed to install CUDA packages. GPU acceleration may not work."
+    echo "CUDA detected. Checking for CUDA Python packages..."
+    
+    # Check if CUDA Python packages are already installed
+    if python3 -c "import pycuda" 2>/dev/null && python3 -c "import cupy" 2>/dev/null; then
+        echo "CUDA Python packages already installed"
+    else
+        echo "Installing CUDA-specific Python packages..."
+        
+        # Check for automated mode
+        if [ "${AUTO_SKIP_CUDA}" = "1" ]; then
+            echo "AUTO_SKIP_CUDA=1: Skipping CUDA Python packages installation in automated mode"
+        else
+            read -p "Do you want to install CUDA Python packages? (y/n): " install_cuda_py
+            if [ "$install_cuda_py" = "y" ] || [ "$install_cuda_py" = "Y" ]; then
+                # Get CUDA version to determine correct cupy package
+                CUDA_VERSION=$(nvcc --version | grep "release" | awk '{print $6}' | cut -c2-)
+                CUDA_MAJOR=$(echo $CUDA_VERSION | cut -d. -f1)
+                CUDA_MINOR=$(echo $CUDA_VERSION | cut -d. -f2)
+                
+                echo "Detected CUDA version: $CUDA_VERSION"
+                
+                # Install appropriate CUDA packages based on version
+                if [ $CUDA_MAJOR -eq 11 ]; then
+                    echo "Installing cupy-cuda11x and pycuda..."
+                    pip install pycuda cupy-cuda11x || echo "Warning: Failed to install CUDA packages. GPU acceleration may not work."
+                elif [ $CUDA_MAJOR -eq 12 ]; then
+                    echo "Installing cupy-cuda12x and pycuda..."
+                    pip install pycuda cupy-cuda12x || echo "Warning: Failed to install CUDA packages. GPU acceleration may not work."
+                else
+                    echo "Installing generic cupy and pycuda..."
+                    pip install pycuda cupy || echo "Warning: Failed to install CUDA packages. GPU acceleration may not work."
+                fi
+            else
+                echo "Skipping CUDA Python packages installation. GPU acceleration will not be available."
+            fi
+        fi
+    fi
+else
+    echo "CUDA not detected. Skipping CUDA-specific Python packages."
+    echo "Note: GPU acceleration will not be available without CUDA."
 fi
 
 # Create environment file

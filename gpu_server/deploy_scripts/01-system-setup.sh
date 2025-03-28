@@ -16,46 +16,80 @@ apt install -y build-essential python3-dev python3-pip python3-venv nginx superv
 if lspci | grep -i nvidia > /dev/null; then
   echo "NVIDIA GPU detected"
   
-  # Check if NVIDIA drivers are already installed
-  if ! command -v nvidia-smi &> /dev/null; then
-    echo "Installing NVIDIA drivers..."
-    apt install -y nvidia-driver-525
-    
-    # Verify installation
-    echo "Verifying NVIDIA driver installation..."
-    nvidia-smi || echo "Warning: NVIDIA driver installation may have failed"
+  # Comprehensive check for NVIDIA drivers
+  if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+    echo "NVIDIA drivers already installed and working"
+    echo "Driver info:"
+    nvidia-smi | grep "Driver Version"
   else
-    echo "NVIDIA drivers already installed"
-    nvidia-smi
+    echo "NVIDIA drivers not detected or not working properly"
+    
+    # Check for automated mode
+    if [ "${AUTO_SKIP_NVIDIA}" = "1" ]; then
+      echo "AUTO_SKIP_NVIDIA=1: Skipping NVIDIA driver installation in automated mode"
+    else
+      read -p "Do you want to install NVIDIA drivers? (y/n): " install_drivers
+      if [ "$install_drivers" = "y" ] || [ "$install_drivers" = "Y" ]; then
+        echo "Installing NVIDIA drivers..."
+        apt install -y nvidia-driver-525
+        
+        # Verify installation
+        echo "Verifying NVIDIA driver installation..."
+        nvidia-smi || echo "Warning: NVIDIA driver installation may have failed"
+      else
+        echo "Skipping NVIDIA driver installation. GPU acceleration might not work."
+      fi
+    fi
   fi
   
-  # Check if CUDA is already installed
-  if ! command -v nvcc &> /dev/null; then
-    echo "Installing CUDA Toolkit..."
-    
-    # Download CUDA installer
-    cd /tmp
-    wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
-    
-    # Run installer in silent mode
-    sh cuda_11.8.0_520.61.05_linux.run --silent --toolkit --samples --override
-    
-    # Add CUDA to system PATH if not already there
-    if ! grep -q 'export PATH=/usr/local/cuda/bin:$PATH' /etc/profile.d/cuda.sh 2>/dev/null; then
-      echo 'export PATH=/usr/local/cuda/bin:$PATH' > /etc/profile.d/cuda.sh
-      echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> /etc/profile.d/cuda.sh
-      chmod +x /etc/profile.d/cuda.sh
-    fi
-    
-    # Source the file to update current session
+  # Comprehensive check for CUDA
+  if command -v nvcc &> /dev/null; then
+    echo "CUDA Toolkit already installed"
+    echo "CUDA Version:"
+    nvcc --version | grep "release"
+  elif [ -d "/usr/local/cuda" ] && [ -f "/usr/local/cuda/bin/nvcc" ]; then
+    echo "CUDA Toolkit found but not in PATH"
+    echo "Adding CUDA to system PATH..."
+    echo 'export PATH=/usr/local/cuda/bin:$PATH' > /etc/profile.d/cuda.sh
+    echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> /etc/profile.d/cuda.sh
+    chmod +x /etc/profile.d/cuda.sh
     source /etc/profile.d/cuda.sh
     
-    # Verify CUDA installation
-    echo "Verifying CUDA installation..."
-    nvcc --version || echo "Warning: CUDA installation may have failed"
-  else
-    echo "CUDA already installed"
+    echo "CUDA Version:"
     nvcc --version
+  else
+    echo "CUDA Toolkit not detected"
+    
+    # Check for automated mode
+    if [ "${AUTO_SKIP_CUDA}" = "1" ]; then
+      echo "AUTO_SKIP_CUDA=1: Skipping CUDA installation in automated mode"
+    else
+      read -p "Do you want to install CUDA Toolkit? (y/n): " install_cuda
+      if [ "$install_cuda" = "y" ] || [ "$install_cuda" = "Y" ]; then
+        echo "Installing CUDA Toolkit..."
+        
+        # Download CUDA installer
+        cd /tmp
+        wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
+        
+        # Run installer in silent mode
+        sh cuda_11.8.0_520.61.05_linux.run --silent --toolkit --samples --override
+        
+        # Add CUDA to system PATH
+        echo 'export PATH=/usr/local/cuda/bin:$PATH' > /etc/profile.d/cuda.sh
+        echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> /etc/profile.d/cuda.sh
+        chmod +x /etc/profile.d/cuda.sh
+        
+        # Source the file to update current session
+        source /etc/profile.d/cuda.sh
+        
+        # Verify CUDA installation
+        echo "Verifying CUDA installation..."
+        nvcc --version || echo "Warning: CUDA installation may have failed"
+      else
+        echo "Skipping CUDA installation. GPU acceleration will not be available."
+      fi
+    fi
   fi
 else
   echo "Warning: No NVIDIA GPU detected. GPU acceleration will not be available."

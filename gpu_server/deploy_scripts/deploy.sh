@@ -56,6 +56,11 @@ fi
 # Get directory of this script
 SCRIPT_DIR=$(dirname "$0")
 
+# Set environment variables for non-interactive mode
+# This will skip installation of NVIDIA drivers and CUDA if they already exist
+export AUTO_SKIP_NVIDIA=1
+export AUTO_SKIP_CUDA=1 
+
 # Step 1: System setup
 print_step "Step 1/6: System Setup"
 $SCRIPT_DIR/01-system-setup.sh || {

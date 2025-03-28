@@ -1,128 +1,197 @@
-# AlphaStrategyLab GPU Backtesting Server
+# AlphaStrategyLab GPU Server
 
-This component provides GPU-accelerated backtesting services for the AlphaStrategyLab platform. It is designed to be deployed on a separate server with GPU capability to handle computationally intensive backtesting operations.
+A GPU-accelerated backtesting engine for AlphaStrategyLab, designed to run on a remote server with NVIDIA GPU capabilities.
 
 ## Overview
 
-The GPU Backtesting Server is a self-contained component that communicates with the main AlphaStrategyLab application through RESTful APIs. It provides the following capabilities:
+This component provides high-performance backtesting services for trading strategies using GPU acceleration. It's designed to be deployed on a separate server with GPU capabilities, independent from the main AlphaStrategyLab application.
 
-- High-performance backtesting of trading strategies using GPU acceleration
-- Parallel processing of multiple backtest jobs
-- CUDA-accelerated strategy execution
-- Custom market data handling
-- Comprehensive performance metrics calculation
+## Features
+
+- GPU-accelerated strategy backtesting
+- RESTful API for job submission and results retrieval
+- Support for multiple strategy types
+- Parallel job processing
+- Database storage for backtest results
+- Performance metrics calculation
 
 ## Architecture
 
-The server consists of the following main components:
+The GPU Server consists of:
+- Flask-based REST API
+- GPU-accelerated computation engine
+- Job queue and worker system
+- Database integration
+- Monitoring and maintenance tools
 
-1. **Flask Web Server**: Provides RESTful API endpoints for submitting backtest jobs, retrieving results, and managing data sources.
+## Deployment Instructions
 
-2. **GPU Engine**: Core engine that executes trading strategies on GPU using CUDA kernels. Falls back to CPU execution if GPU is not available.
+### Preparation
 
-3. **Data Service**: Manages market data retrieval, caching, and custom data uploads.
+1. **Download the code**: First, download all the deployment scripts from your project:
+   - Navigate to the `gpu_server/deploy` folder in your project
+   - Download all the files to your local computer
 
-4. **Strategy Library**: Collection of trading strategy templates that can be executed on GPU.
-
-## Requirements
-
-- CUDA-capable NVIDIA GPU (recommended)
-- Python 3.8+
-- Flask
-- SQLAlchemy
-- PyCUDA
-- CuPy
-- pandas
-- numpy
-- PostgreSQL database
-
-## Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Install CUDA dependencies (on the GPU server):
-   ```
-   pip install pycuda cupy-cuda11x
-   ```
-4. Configure the server by setting environment variables (see Configuration section)
-5. Start the server:
-   ```
-   python app.py
+2. **Transfer files to your remote server**: Use SCP, SFTP, or any file transfer method:
+   ```bash
+   scp -r gpu_server/deploy/* username@your-server-ip:~/gpu-deploy/
    ```
 
-## Configuration
+### Deployment Options
 
-The server can be configured using environment variables:
+#### Option 1: Using the Interactive Menu (Recommended)
 
-- `GPU_SERVER_HOST`: Hostname to bind the server (default: 0.0.0.0)
-- `GPU_SERVER_PORT`: Port to listen on (default: 5050)
-- `GPU_SERVER_DEBUG`: Enable debug mode (default: True)
-- `DATABASE_URL`: PostgreSQL database connection string
-- `GPU_DEVICE`: GPU device ID to use (default: 0)
-- `MAX_CONCURRENT_JOBS`: Maximum number of concurrent backtest jobs (default: 10)
-- `GPU_MEMORY_LIMIT`: Maximum fraction of GPU memory to use (default: 0.9)
-- `TIINGO_API_KEY`: API key for Tiingo market data (optional)
-- `API_KEY_REQUIRED`: Whether to require API key authentication (default: False)
-- `GPU_SERVER_API_KEY`: API key for server authentication (required if API_KEY_REQUIRED is True)
+1. **SSH into your server**:
+   ```bash
+   ssh username@your-server-ip
+   ```
 
-## API Endpoints
+2. **Navigate to the deployment directory**:
+   ```bash
+   cd ~/gpu-deploy
+   ```
+
+3. **Make scripts executable**:
+   ```bash
+   chmod +x *.sh
+   ./make_executable.sh
+   ```
+
+4. **Run the interactive menu**:
+   ```bash
+   sudo ./menu.sh
+   ```
+
+5. **Follow the menu prompts**:
+   - For a new installation, select "Full automated deployment"
+   - To update an existing installation, select "Service Management Menu" → "Update application code"
+   - For step-by-step control, select "Step-by-step deployment"
+
+#### Option 2: Using the Automated Deployment Script
+
+1. **SSH into your server**:
+   ```bash
+   ssh username@your-server-ip
+   ```
+
+2. **Navigate to the deployment directory**:
+   ```bash
+   cd ~/gpu-deploy
+   ```
+
+3. **Make scripts executable**:
+   ```bash
+   chmod +x *.sh
+   ```
+
+4. **Run the deployment script**:
+   ```bash
+   sudo ./deploy.sh
+   ```
+
+5. **Follow the prompts** during installation.
+
+#### Option 3: Step-by-Step Manual Deployment
+
+If you prefer to run each step manually or just update specific components:
+
+1. **Make scripts executable**:
+   ```bash
+   chmod +x *.sh
+   ```
+
+2. **Run individual scripts in sequence**:
+   ```bash
+   sudo ./01-system-setup.sh     # System dependencies
+   sudo ./02-database-setup.sh   # Database configuration
+   sudo ./03-app-deploy.sh       # App code deployment
+   sudo ./04-supervisor-setup.sh # Process management
+   sudo ./05-nginx-setup.sh      # Web server/proxy
+   sudo ./06-monitoring-setup.sh # Monitoring tools
+   ```
+
+### Post-Deployment
+
+1. **Verify the service is running**:
+   ```bash
+   sudo supervisorctl status alphastrategy-gpu
+   ```
+
+2. **Check logs for any errors**:
+   ```bash
+   sudo tail -f /opt/alphastrategylab/logs/alphastrategy-gpu.log
+   ```
+
+3. **Access the API**: The GPU server should be available at:
+   ```
+   http://your-server-ip
+   ```
+   or if you configured SSL:
+   ```
+   https://your-domain.com
+   ```
+
+4. **Note your API key**: Make sure to save the API key shown at the end of the deployment process for authenticating with the GPU server from your main application.
+
+### Updating an Existing Deployment
+
+If you need to update an existing deployment with new code:
+
+1. **Use the menu**:
+   ```bash
+   sudo ./menu.sh
+   ```
+   Then select "Manage deployed service" → "Update application code"
+
+2. **Or run the update script directly**:
+   ```bash
+   sudo /opt/alphastrategylab/config/update-app.sh
+   ```
+
+## System Requirements
+
+- Ubuntu 20.04 LTS or newer
+- NVIDIA GPU (recommended: NVIDIA T4, V100, A100, or similar)
+- CUDA 11.0+
+- 8+ CPU cores
+- 16+ GB RAM
+- 100+ GB SSD storage
+- PostgreSQL 12+
+
+## API Reference
 
 ### Authentication
 
-If `API_KEY_REQUIRED` is set to `True`, all API requests must include the `X-API-Key` header with the configured API key.
+All API requests require an API key to be included in the header:
 
-### Backtest Operations
+```
+X-API-Key: your-api-key-here
+```
 
-- `POST /backtest`: Submit a new backtest job
-- `GET /backtest/<job_id>`: Get status and results of a backtest job
-- `GET /strategies`: List available strategy templates
-- `GET /gpu/status`: Get GPU status information
+### Endpoints
 
-### Data Operations
+- `GET /health` - Health check endpoint
+- `POST /backtest` - Submit a new backtest job
+- `GET /backtest/{job_id}` - Get status of a backtest job
+- `GET /data-sources` - List available data sources
+- `GET /symbols` - List available symbols
+- `POST /data/upload` - Upload custom market data
+- `GET /gpu/status` - Get GPU status information
+- `GET /strategies` - List available strategies
 
-- `GET /data/sources`: List available data sources
-- `GET /data/symbols`: List available symbols for a data source
-- `POST /data/upload`: Upload custom market data
+## Development
 
-## Integration with AlphaStrategyLab
+For local development without GPU:
 
-The main AlphaStrategyLab application communicates with this GPU server using RESTful API calls. Integration steps:
-
-1. Configure the main application with the GPU server URL and API key
-2. Add API client in the main application to forward backtest requests to the GPU server
-3. Set up scheduled tasks to retrieve completed backtest results
-
-## Development and Deployment
-
-### Development
-
-For development and testing on systems without GPU:
-- The server will automatically fall back to CPU execution when CUDA is not available
-- Install the Python dependencies without CUDA extensions:
-  ```
-  pip install -r requirements-dev.txt
-  ```
-
-### Deployment
-
-For production deployment on a GPU server:
-1. Clone the repository on a server with GPU capability
-2. Install all dependencies including CUDA extensions
-3. Configure the server with appropriate environment variables
-4. Set up a reverse proxy (e.g., Nginx) to handle HTTPS and security
-5. Use a process manager (e.g., Supervisor) to keep the server running
-
-## Security Considerations
-
-- Enable API key authentication in production
-- Deploy behind a secure reverse proxy
-- Restrict network access to trusted IPs
-- Set up HTTPS with proper certificates
-- Monitor and restrict resource usage
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Set up environment variables (see `.env.example`)
+4. Run the server: `python run.py`
 
 ## License
 
-Copyright © 2024 AlphaStrategyLab
+Proprietary - All rights reserved
+
+## Support
+
+For support, please contact the AlphaStrategyLab team.

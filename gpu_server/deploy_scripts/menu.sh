@@ -60,18 +60,8 @@ show_menu() {
 full_deployment() {
   print_message "Starting full automated deployment..."
   
-  # Ask for GitHub repository URL
-  if [ -z "${GITHUB_REPO}" ]; then
-    read -p "Enter your GitHub repository URL: " GITHUB_REPO
-  else
-    read -p "Enter your GitHub repository URL [$GITHUB_REPO]: " input
-    if [ ! -z "$input" ]; then
-      GITHUB_REPO=$input
-    fi
-  fi
-  
-  # Save configuration
-  echo "GITHUB_REPO=\"$GITHUB_REPO\"" > "$CONFIG_FILE"
+  # Configuration is now in place
+  echo "Starting automated deployment..."
   
   # Run the deployment script
   if $SCRIPTS_DIR/deploy.sh; then
@@ -126,12 +116,8 @@ step_deployment() {
         ;;
       3)
         print_message "Running application deployment..."
-        # Ask for GitHub repository URL if not set
-        if [ -z "${GITHUB_REPO}" ]; then
-          read -p "Enter your GitHub repository URL: " GITHUB_REPO
-          echo "GITHUB_REPO=\"$GITHUB_REPO\"" > "$CONFIG_FILE"
-        fi
-        export GITHUB_REPO
+        # No need for GitHub repository URL with local deployment
+        print_message "Running application deployment from local files..."
         
         if $SCRIPTS_DIR/03-app-deploy.sh; then
           print_success "Application deployment completed successfully!"
@@ -371,24 +357,17 @@ configure() {
     echo "           Configuration Menu             "
     echo "==========================================="
     echo ""
-    echo "1) Set GitHub repository URL"
-    echo "2) Configure Tiingo API key"
-    echo "3) Reset GPU server API key"
-    echo "4) Configure database backup schedule"
-    echo "5) Return to main menu"
+    echo "1) Configure Tiingo API key"
+    echo "2) Reset GPU server API key"
+    echo "3) Configure database backup schedule"
+    echo "4) Return to main menu"
     echo ""
     echo "==========================================="
     echo ""
-    read -p "Enter your choice [1-5]: " choice
+    read -p "Enter your choice [1-4]: " choice
     
     case $choice in
       1)
-        read -p "Enter your GitHub repository URL: " GITHUB_REPO
-        echo "GITHUB_REPO=\"$GITHUB_REPO\"" > "$CONFIG_FILE"
-        print_success "GitHub repository URL updated"
-        read -p "Press Enter to continue..."
-        ;;
-      2)
         read -p "Enter your Tiingo API key: " TIINGO_API_KEY
         if [ -f "/opt/alphastrategylab/gpu_server/.env" ]; then
           sed -i "s/TIINGO_API_KEY=.*/TIINGO_API_KEY=$TIINGO_API_KEY/" /opt/alphastrategylab/gpu_server/.env
@@ -402,7 +381,7 @@ configure() {
         fi
         read -p "Press Enter to continue..."
         ;;
-      3)
+      2)
         NEW_API_KEY=$(openssl rand -base64 32)
         if [ -f "/opt/alphastrategylab/gpu_server/.env" ]; then
           sed -i "s/GPU_SERVER_API_KEY=.*/GPU_SERVER_API_KEY=$NEW_API_KEY/" /opt/alphastrategylab/gpu_server/.env
@@ -416,7 +395,7 @@ configure() {
         fi
         read -p "Press Enter to continue..."
         ;;
-      4)
+      3)
         read -p "Enter cron schedule for database backups (e.g., '0 2 * * *' for 2 AM daily): " CRON_SCHEDULE
         if [ -f "/opt/alphastrategylab/config/backup-database.sh" ]; then
           (crontab -l 2>/dev/null || echo "") | grep -v "/opt/alphastrategylab/config/backup-database.sh" | { cat; echo "$CRON_SCHEDULE /opt/alphastrategylab/config/backup-database.sh >> /opt/alphastrategylab/logs/backup.log 2>&1"; } | crontab -
@@ -426,7 +405,7 @@ configure() {
         fi
         read -p "Press Enter to continue..."
         ;;
-      5)
+      4)
         return
         ;;
       *)

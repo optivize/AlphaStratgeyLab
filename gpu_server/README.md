@@ -63,9 +63,11 @@ The GPU Server consists of:
    ```
 
 5. **Follow the menu prompts**:
-   - For a new installation, select "Full automated deployment"
+   - For a new installation, select "Full automated deployment" 
    - To update an existing installation, select "Service Management Menu" → "Update application code"
    - For step-by-step control, select "Step-by-step deployment"
+   
+   > **Note:** The deployment scripts will automatically use the code you've transferred to the server. You don't need to provide a GitHub URL as the scripts will copy the code from the correct location.
 
 #### Option 2: Using the Automated Deployment Script
 
@@ -91,6 +93,8 @@ The GPU Server consists of:
 
 5. **Follow the prompts** during installation.
 
+   > **Note:** The deployment scripts will automatically use the code you've transferred to the server. You don't need to provide a GitHub URL as the scripts will copy the code from the correct location.
+
 #### Option 3: Step-by-Step Manual Deployment
 
 If you prefer to run each step manually or just update specific components:
@@ -109,6 +113,8 @@ If you prefer to run each step manually or just update specific components:
    sudo ./05-nginx-setup.sh      # Web server/proxy
    sudo ./06-monitoring-setup.sh # Monitoring tools
    ```
+   
+   > **Note:** The deployment scripts will automatically use the code you've transferred to the server. You don't need to provide a GitHub URL as the scripts will copy the code from the correct location.
 
 ### Post-Deployment
 

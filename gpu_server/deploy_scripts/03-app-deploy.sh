@@ -9,21 +9,12 @@ echo "Deploying application code..."
 # Set variables
 APP_DIR="/opt/alphastrategylab/gpu_server"
 CONFIG_DIR="/opt/alphastrategylab/config"
-GITHUB_REPO=${GITHUB_REPO:-"https://github.com/yourusername/alphastrategylab.git"}
+SOURCE_DIR=${SOURCE_DIR:-"$(dirname $(dirname $(realpath $0)))"}
 
-# Check if git is installed
+# Check if git is installed (may still be needed for updates)
 if ! command -v git &> /dev/null; then
     echo "Installing git..."
     apt install -y git
-fi
-
-# Ask for repository URL if not provided
-if [ -z "${GITHUB_REPO}" ] || [ "${GITHUB_REPO}" = "https://github.com/yourusername/alphastrategylab.git" ]; then
-    read -p "Enter your GitHub repository URL: " GITHUB_REPO
-    if [ -z "${GITHUB_REPO}" ]; then
-        echo "No repository URL provided. Exiting."
-        exit 1
-    fi
 fi
 
 # Ask for API keys
@@ -36,29 +27,25 @@ if [ -z "${GPU_SERVER_API_KEY}" ]; then
     echo "Generated GPU server API key: ${GPU_SERVER_API_KEY}"
 fi
 
-# Clone the repository if directory doesn't exist or is empty
-if [ ! -d "$APP_DIR" ] || [ -z "$(ls -A $APP_DIR)" ]; then
-    echo "Cloning repository from ${GITHUB_REPO}..."
-    rm -rf $APP_DIR
-    git clone $GITHUB_REPO $APP_DIR
+# Create application directory if it doesn't exist
+if [ ! -d "$APP_DIR" ]; then
+    echo "Creating application directory..."
+    mkdir -p $APP_DIR
+fi
+
+# Copy the GPU server code to the application directory
+echo "Copying GPU server code to application directory..."
+mkdir -p $APP_DIR
+if [ -d "$SOURCE_DIR/gpu_server" ]; then
+    # Copy from the gpu_server subdirectory
+    rsync -av --exclude '.git' "$SOURCE_DIR/gpu_server/" $APP_DIR/
+elif [ -d "$SOURCE_DIR" ]; then
+    # If we're already in the gpu_server directory or have all the code
+    rsync -av --exclude '.git' "$SOURCE_DIR/" $APP_DIR/
 else
-    echo "Application directory already exists and is not empty"
-    echo "Updating existing code..."
-    cd $APP_DIR
-    git pull
-fi
-
-# Make sure we have the gpu_server directory
-if [ ! -d "$APP_DIR/gpu_server" ]; then
-    echo "Error: gpu_server directory not found in repository"
-    echo "Please make sure your repository contains the GPU server code"
+    echo "Error: Source directory not found"
+    echo "Please make sure the gpu_server code is available"
     exit 1
-fi
-
-# Use the gpu_server directory if that's the structure of the repo
-if [ -d "$APP_DIR/gpu_server" ] && [ "$APP_DIR" != "$APP_DIR/gpu_server" ]; then
-    echo "Moving gpu_server directory to correct location..."
-    mv $APP_DIR/gpu_server/* $APP_DIR/
 fi
 
 # Set up Python virtual environment

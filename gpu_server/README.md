@@ -29,12 +29,12 @@ The GPU Server consists of:
 ### Preparation
 
 1. **Download the code**: First, download all the deployment scripts from your project:
-   - Navigate to the `gpu_server/deploy` folder in your project
+   - Navigate to the `gpu_server/deploy_scripts` folder in your project
    - Download all the files to your local computer
 
 2. **Transfer files to your remote server**: Use SCP, SFTP, or any file transfer method:
    ```bash
-   scp -r gpu_server/deploy/* username@your-server-ip:~/gpu-deploy/
+   scp -r gpu_server/deploy_scripts/* username@your-server-ip:~/deploy_scripts/
    ```
 
 ### Deployment Options
@@ -48,7 +48,7 @@ The GPU Server consists of:
 
 2. **Navigate to the deployment directory**:
    ```bash
-   cd ~/gpu-deploy
+   cd ~/deploy_scripts
    ```
 
 3. **Make scripts executable**:
@@ -76,7 +76,7 @@ The GPU Server consists of:
 
 2. **Navigate to the deployment directory**:
    ```bash
-   cd ~/gpu-deploy
+   cd ~/deploy_scripts
    ```
 
 3. **Make scripts executable**:

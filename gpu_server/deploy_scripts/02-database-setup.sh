@@ -14,9 +14,34 @@ else
     echo "PostgreSQL already installed"
 fi
 
-# Ensure PostgreSQL is running
-systemctl start postgresql
-systemctl enable postgresql
+# Ensure PostgreSQL is running - handle both systemd and non-systemd environments
+if command -v systemctl &> /dev/null && systemctl list-units &> /dev/null; then
+    echo "Using systemd to start PostgreSQL..."
+    systemctl start postgresql || echo "Warning: Failed to start PostgreSQL with systemd"
+    systemctl enable postgresql || echo "Warning: Failed to enable PostgreSQL with systemd"
+else
+    echo "Running in a non-systemd environment, using alternative service management..."
+    if [ -f /etc/init.d/postgresql ]; then
+        /etc/init.d/postgresql start || echo "Warning: Failed to start PostgreSQL with init.d script"
+    elif [ -d /var/run/postgresql ]; then
+        # For Docker/container environments where postgres might need manual starting
+        echo "Attempting to start PostgreSQL manually..."
+        if id -u postgres &>/dev/null; then
+            # Start PostgreSQL server manually as postgres user if it's not running
+            if ! sudo -u postgres pg_isready -q; then
+                echo "Starting PostgreSQL server manually..."
+                sudo -u postgres pg_ctl -D /var/lib/postgresql/14/main -l /var/log/postgresql/postgresql-14-main.log start || echo "Warning: Manual PostgreSQL start failed"
+            else
+                echo "PostgreSQL is already running"
+            fi
+        else
+            echo "PostgreSQL user not found, cannot start manually"
+        fi
+    else
+        echo "Warning: Could not determine how to start PostgreSQL in this environment"
+        echo "Please ensure PostgreSQL is running before proceeding"
+    fi
+fi
 
 # Set database credentials (you might want to change these values)
 DB_USER="alphauser"

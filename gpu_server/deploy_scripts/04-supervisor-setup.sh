@@ -16,9 +16,24 @@ if ! command -v supervisorctl &> /dev/null; then
     apt install -y supervisor
 fi
 
-# Ensure supervisord is running
-systemctl start supervisor
-systemctl enable supervisor
+# Ensure supervisord is running - handle both systemd and non-systemd environments
+if command -v systemctl &> /dev/null && systemctl list-units &> /dev/null; then
+    echo "Using systemd to manage supervisor..."
+    systemctl start supervisor || echo "Warning: Failed to start supervisor with systemd"
+    systemctl enable supervisor || echo "Warning: Failed to enable supervisor with systemd"
+else
+    echo "Running in a non-systemd environment, using alternative service management..."
+    if [ -f /etc/init.d/supervisor ]; then
+        /etc/init.d/supervisor start || echo "Warning: Failed to start supervisor with init.d script"
+    else
+        echo "Starting supervisor manually..."
+        if ! pgrep -x "supervisord" > /dev/null; then
+            supervisord || echo "Warning: Failed to start supervisord manually"
+        else
+            echo "Supervisor is already running"
+        fi
+    fi
+fi
 
 # Create supervisor configuration file
 echo "Creating supervisor configuration..."

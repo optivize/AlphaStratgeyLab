@@ -95,6 +95,28 @@ The GPU Server consists of:
 
    > **Note:** The deployment scripts will automatically use the code you've transferred to the server. You don't need to provide a GitHub URL as the scripts will copy the code from the correct location.
 
+#### Option 2.5: Fully Automated Non-Interactive Deployment (Container or CI/CD)
+
+For containerized environments or CI/CD pipelines, you can use the fully automated mode:
+
+1. **Set environment variables to enable automatic mode**:
+   ```bash
+   export AUTO_MODE=1  # Enable fully automated deployment
+   export AUTO_SKIP_NVIDIA=1  # Skip NVIDIA driver installation prompts
+   export AUTO_SKIP_CUDA=1  # Skip CUDA installation prompts
+   ```
+
+2. **Run the deployment script without any interactive prompts**:
+   ```bash
+   sudo -E ./deploy.sh  # The -E flag preserves environment variables
+   ```
+
+This mode automatically detects container environments and will behave appropriately:
+- Skips all interactive prompts
+- Preserves existing NVIDIA and CUDA installations
+- Automatically configures using sensible defaults
+- Uses alternative service management in non-systemd environmentsn.
+
 #### Option 3: Step-by-Step Manual Deployment
 
 If you prefer to run each step manually or just update specific components:

@@ -70,7 +70,13 @@ chmod +x ${CONFIG_DIR}/backup-database.sh
 
 # Set up cron job for daily backups
 echo "Setting up cron job for daily backups..."
-(crontab -l 2>/dev/null || echo "") | grep -v "${CONFIG_DIR}/backup-database.sh" | { cat; echo "0 2 * * * ${CONFIG_DIR}/backup-database.sh >> ${LOG_DIR}/backup.log 2>&1"; } | crontab -
+if command -v crontab &> /dev/null; then
+    (crontab -l 2>/dev/null || echo "") | grep -v "${CONFIG_DIR}/backup-database.sh" | { cat; echo "0 2 * * * ${CONFIG_DIR}/backup-database.sh >> ${LOG_DIR}/backup.log 2>&1"; } | crontab - || echo "Warning: Failed to set up cron job, manual setup may be required"
+else
+    echo "Warning: crontab command not available in this environment"
+    echo "Please set up scheduled backups manually using your environment's scheduler"
+    echo "You can run ${CONFIG_DIR}/backup-database.sh directly at any time to create a backup"
+fi
 
 # Create system status script
 echo "Creating system status script..."

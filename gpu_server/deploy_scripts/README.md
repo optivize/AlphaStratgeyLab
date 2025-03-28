@@ -154,6 +154,28 @@ If you encounter issues during deployment:
    sudo supervisorctl restart alphastrategy-gpu
    ```
 
+### Container Environment Issues
+
+If deploying in a container environment (Docker, Kubernetes, etc.):
+
+1. Use the automated non-interactive mode:
+   ```bash
+   export AUTO_MODE=1
+   sudo -E ./deploy.sh
+   ```
+
+2. Common container-specific issues:
+   - Systemd not available: The scripts will automatically detect this and use alternative service management
+   - PostgreSQL service fails to start: Scripts will attempt to start PostgreSQL manually
+   - Nvidia/CUDA installation fails: Use the host's GPU drivers with volume mounts instead of installing in the container
+   - No interactive input available: Use environment variables to control installation flow:
+     ```bash
+     export AUTO_MODE=1
+     export AUTO_SKIP_NVIDIA=1
+     export AUTO_SKIP_CUDA=1
+     export AUTO_SKIP_INTERACTIVE=1
+     ```
+
 ## Security Notes
 
 - The deployment script generates random passwords and API keys

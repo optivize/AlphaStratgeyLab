@@ -29,37 +29,57 @@ print_error() {
   echo -e "${RED}$1${NC}"
 }
 
-# Welcome message
-clear
-echo -e "${BLUE}==========================================${NC}"
-echo -e "${BLUE}  AlphaStrategyLab GPU Server Deployment  ${NC}"
-echo -e "${BLUE}==========================================${NC}"
-echo ""
-echo "This script will deploy the AlphaStrategyLab GPU Server"
-echo "on this machine. Make sure you have a GPU available for"
-echo "optimal performance."
-echo ""
-echo "The deployment process will:"
-echo "  1. Install system dependencies (CUDA, etc.)"
-echo "  2. Set up PostgreSQL database"
-echo "  3. Deploy the application code"
-echo "  4. Configure supervisor for process management"
-echo "  5. Set up Nginx as a reverse proxy"
-echo "  6. Configure monitoring and maintenance tools"
-echo ""
-read -p "Do you want to continue? (y/n): " confirm
-if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-  echo "Deployment cancelled"
-  exit 0
-fi
-
 # Get directory of this script
 SCRIPT_DIR=$(dirname "$0")
 
-# Set environment variables for non-interactive mode
-# This will skip installation of NVIDIA drivers and CUDA if they already exist
-export AUTO_SKIP_NVIDIA=1
-export AUTO_SKIP_CUDA=1 
+# Detect if running in container environment
+if grep -q docker /proc/1/cgroup 2>/dev/null || [ -f /.dockerenv ] || grep -q lxc /proc/1/cgroup 2>/dev/null; then
+  CONTAINER_ENV=1
+  echo "Container environment detected"
+else
+  CONTAINER_ENV=0
+  echo "Standard environment detected"
+fi
+
+# Set environment variables
+# Check if we should run in auto mode
+if [ "${AUTO_MODE}" = "1" ] || [ "${CONTAINER_ENV}" = "1" ]; then
+  # Auto mode - skip interactive prompts
+  AUTO_MODE=1
+  export AUTO_SKIP_NVIDIA=1
+  export AUTO_SKIP_CUDA=1
+  export AUTO_SKIP_INTERACTIVE=1
+  echo "Running in automatic deployment mode"
+else
+  # Interactive mode - show welcome message
+  clear
+  echo -e "${BLUE}==========================================${NC}"
+  echo -e "${BLUE}  AlphaStrategyLab GPU Server Deployment  ${NC}"
+  echo -e "${BLUE}==========================================${NC}"
+  echo ""
+  echo "This script will deploy the AlphaStrategyLab GPU Server"
+  echo "on this machine. Make sure you have a GPU available for"
+  echo "optimal performance."
+  echo ""
+  echo "The deployment process will:"
+  echo "  1. Install system dependencies (CUDA, etc.)"
+  echo "  2. Set up PostgreSQL database"
+  echo "  3. Deploy the application code"
+  echo "  4. Configure supervisor for process management"
+  echo "  5. Set up Nginx as a reverse proxy"
+  echo "  6. Configure monitoring and maintenance tools"
+  echo ""
+  read -p "Do you want to continue? (y/n): " confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    echo "Deployment cancelled"
+    exit 0
+  fi
+  
+  # Set default environment variables for non-interactive mode
+  # This will skip installation of NVIDIA drivers and CUDA if they already exist
+  export AUTO_SKIP_NVIDIA=1
+  export AUTO_SKIP_CUDA=1
+fi
 
 # Step 1: System setup
 print_step "Step 1/6: System Setup"

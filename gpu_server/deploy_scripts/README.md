@@ -26,29 +26,24 @@ These scripts automate the deployment of the AlphaStrategyLab GPU Server on a re
 
 ### 2. Clone and Deploy
 
-1. Clone the repository that contains these deployment scripts:
+1. Transfer the deployment scripts to your server:
    ```bash
-   git clone https://github.com/yourusername/alphastrategylab.git
-   cd alphastrategylab
+   scp -r gpu_server/deploy_scripts/* username@your-server-ip:~/deploy_scripts/
+   ssh username@your-server-ip
+   cd ~/deploy_scripts
    ```
 
-2. Navigate to the deployment directory:
-   ```bash
-   cd gpu_server/deploy
-   ```
-
-3. Make all scripts executable:
+2. Make all scripts executable:
    ```bash
    chmod +x *.sh
    ```
 
-4. Run the main deployment script:
+3. Run the main deployment script:
    ```bash
    sudo ./deploy.sh
    ```
 
-5. Follow the prompts during the installation process. You will be asked for:
-   - Your GitHub repository URL (if not provided in the script)
+4. Follow the prompts during the installation process. You will be asked for:
    - Tiingo API key (optional)
    - GPU Server API key (will be generated if not provided)
    - Domain name for the server (optional, will use server IP if not provided)
